@@ -7,6 +7,8 @@ import { Button, Card, CardBody } from "@heroui/react";
 import { MailSearch } from "lucide-react";
 import { toast } from "sonner";
 
+import { GlassSurface } from "../ui/glass-surface";
+
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -44,7 +46,8 @@ export function ForgotPasswordForm() {
   return (
     <div className="grain min-h-screen px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-3xl items-center justify-center">
-        <Card className="panel w-full rounded-[2.25rem] border-0 bg-transparent shadow-none">
+        <Card className="w-full rounded-[2.25rem]">
+          <GlassSurface className="panel rounded-[2.25rem]">
           <CardBody className="space-y-6 p-8 lg:p-10">
             <div className="eyebrow">Account recovery</div>
             <div className="flex items-center gap-3 text-[var(--color-foreground)]">
@@ -86,6 +89,7 @@ export function ForgotPasswordForm() {
               Return to <Link href="/login" className="text-[var(--color-brass)] transition hover:text-[var(--color-foreground)]">login</Link>
             </div>
           </CardBody>
+          </GlassSurface>
         </Card>
       </div>
     </div>

@@ -9,6 +9,7 @@ import { Maximize2, Minimize2 } from "lucide-react";
 import { Spinner } from "@heroui/react";
 
 import { useI18n } from "@/components/language-provider";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import type { MusicToolkitTabId } from "@/lib/hub-access";
 
 // ── Lazy-load tab panels (no tuner — it lives inside harmony) ──────────────
@@ -44,9 +45,9 @@ type MusicToolkitClientProps = {
 
 function TabSpinner() {
   return (
-    <div className="panel flex min-h-[320px] items-center justify-center rounded-[1.75rem] p-6">
+    <GlassSurface className="panel flex min-h-[320px] items-center justify-center rounded-[1.75rem] p-6">
       <Spinner color="warning" />
-    </div>
+    </GlassSurface>
   );
 }
 

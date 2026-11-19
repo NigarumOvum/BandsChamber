@@ -4,6 +4,7 @@ import Link from "next/link";
 import { User } from "lucide-react";
 
 import { useI18n } from "@/components/language-provider";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 export function HeaderAccountLink({ name }: { name: string }) {
   const { t } = useI18n();
@@ -26,7 +27,7 @@ export function FreeAccessBanner() {
   const highlight = t("free.freeAccess");
   const parts = message.split(highlight);
   return (
-    <div className="panel glass-shine flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] p-4">
+    <GlassSurface className="panel glass-shine flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] p-4">
       <p className="text-xs text-[var(--color-sand-1)]">
         {parts.length === 2 ? (
           <>
@@ -52,6 +53,6 @@ export function FreeAccessBanner() {
           {t("free.requestAccess")}
         </Link>
       </div>
-    </div>
+    </GlassSurface>
   );
 }

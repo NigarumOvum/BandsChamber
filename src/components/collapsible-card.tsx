@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, type ReactNode, type MouseEvent } from "react";
+import { useState, type ElementType, type ReactNode, type MouseEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
+
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 export type CollapsibleCardProps = {
   title: ReactNode;
@@ -61,8 +63,10 @@ export function CollapsibleCard({
     bordered: "rounded-2xl border border-[var(--color-stroke)] bg-transparent",
   }[variant];
 
+  const Shell: ElementType = variant === "default" || variant === "glass" ? GlassSurface : "div";
+
   return (
-    <div className={`group overflow-hidden transition-all duration-200 ${variantStyles} ${className}`}>
+    <Shell className={`group overflow-hidden transition-all duration-200 ${variantStyles} ${className}`}>
       <div
         role="button"
         tabIndex={0}
@@ -146,6 +150,6 @@ export function CollapsibleCard({
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </Shell>
   );
 }

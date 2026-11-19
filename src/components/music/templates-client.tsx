@@ -7,6 +7,7 @@ import { ChevronRight, Copy, Pencil, Plus, Save, Trash2, X, Sparkles, BookOpen }
 import { toast } from "sonner";
 
 import { CollapsibleCard } from "@/components/collapsible-card";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import { createTemplate, deleteTemplate, fetchTemplates, updateTemplate } from "@/lib/music/client";
 import type { MusicTaskTemplateRecord, MusicTemplateTargetType } from "@/lib/music/types";
 import { opaqueModalProps } from "@/lib/ui/modal-styles";
@@ -42,6 +43,7 @@ type TemplatesClientProps = {
   itemLabel?: string;
   namePlaceholder?: string;
   instructionsPlaceholder?: string;
+  initialTemplateId?: string;
 };
 
 const emptyDraft: TemplateDraft = {
@@ -93,6 +95,7 @@ export function TemplatesClient({
   itemLabel = "Template",
   namePlaceholder = "Template name",
   instructionsPlaceholder = "Instructions",
+  initialTemplateId,
 }: TemplatesClientProps) {
   const [templates, setTemplates] = useState<MusicTaskTemplateRecord[]>([]);
   const [draft, setDraft] = useState<TemplateDraft>(emptyDraft);
@@ -213,6 +216,11 @@ export function TemplatesClient({
         const payload = await fetchTemplates();
         if (!cancelled) {
           setTemplates(payload.templates);
+          const initialTemplate = payload.templates.find((template) => template.id === initialTemplateId);
+          if (initialTemplate) {
+            setSelectedTemplate(initialTemplate);
+            onDetailOpen();
+          }
         }
       } catch (error) {
         if (!cancelled) {
@@ -230,7 +238,7 @@ export function TemplatesClient({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialTemplateId, onDetailOpen]);
 
   async function persistTemplate() {
     setSaving(true);
@@ -440,7 +448,7 @@ export function TemplatesClient({
           ) : (
             <div className="grid gap-2.5 pt-2 md:grid-cols-2 2xl:grid-cols-3">
               {filteredTemplates.length === 0 ? (
-                <div className="glass-card-soft rounded-[1.25rem] border-[var(--color-warning-border)] bg-gradient-to-br from-[var(--color-warning-surface)] to-transparent p-6 text-center md:col-span-2 2xl:col-span-3">
+                <GlassSurface className="glass-card-soft rounded-[1.25rem] border-[var(--color-warning-border)] bg-gradient-to-br from-[var(--color-warning-surface)] to-transparent p-6 text-center md:col-span-2 2xl:col-span-3">
                   <p className="text-sm text-[var(--color-sand-2)]">
                     {templates.length === 0
                       ? `No saved ${itemLabel.toLowerCase()}s yet. Create your first prompt to get started.`
@@ -456,7 +464,7 @@ export function TemplatesClient({
                       Create Prompt
                     </Button>
                   ) : null}
-                </div>
+                </GlassSurface>
               ) : null}
               {filteredTemplates.map((template) => (
                 <div

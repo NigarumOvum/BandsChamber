@@ -11,7 +11,9 @@ import {
   Play,
   RotateCcw,
   Save,
+  Redo2,
   Trash2,
+  Undo2,
   Volume2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -19,6 +21,7 @@ import { toast } from "sonner";
 import { useAudio } from "@/components/music/audio-provider";
 import { useProductionSong } from "@/components/music/production-song-context";
 import { FileUploadButton, MultiFileUploadGroup } from "@/components/music/file-upload-button";
+import { GlassControl, GlassSurface } from "@/components/ui/glass-surface";
 import { readStoredRaw, useCurrentUserId, userKey, writeStored } from "@/lib/persist";
 import { createPartiture } from "@/lib/music/client";
 import {
@@ -66,6 +69,11 @@ type StoredDawSession = {
   midiClips: Record<string, StoredMidiClip>;
   selectedAssetId: string | null;
   bpm?: number;
+};
+
+type MidiHistoryEntry = {
+  assetId: string;
+  clip: ParsedMidi | null;
 };
 
 function classifyKind(file: File): AssetKind {
@@ -315,7 +323,8 @@ export function DawClient() {
   const rafRef = useRef<number | null>(null);
   const hydratedRef = useRef(false);
   const audioBuffersRef = useRef<Record<string, AudioBuffer>>({});
-  const midiHistoryRef = useRef<ParsedMidi[]>([]);
+  const midiUndoHistoryRef = useRef<MidiHistoryEntry[]>([]);
+  const midiRedoHistoryRef = useRef<MidiHistoryEntry[]>([]);
 
   const [assets, setAssets] = useState<AssetRecord[]>([]);
   const [layers, setLayers] = useState<LayerRecord[]>([]);
@@ -326,6 +335,7 @@ export function DawClient() {
   const [currentTime, setCurrentTime] = useState(0);
   const [sessionBpm, setSessionBpm] = useState(120);
   const [audioDurations, setAudioDurations] = useState<Record<string, number>>({});
+  const [historyAvailability, setHistoryAvailability] = useState({ canUndo: false, canRedo: false });
   const userId = useCurrentUserId();
   const sessionKey = userId ? userKey(userId, DAW_STORAGE_KEY) : DAW_STORAGE_KEY;
 
@@ -367,20 +377,74 @@ export function DawClient() {
     return max;
   }, [layers, midiClips, audioDurations, sessionBpm]);
 
+  const syncHistoryAvailability = useCallback(() => {
+    setHistoryAvailability({
+      canUndo: midiUndoHistoryRef.current.length > 0,
+      canRedo: midiRedoHistoryRef.current.length > 0,
+    });
+  }, []);
+
   const pushMidiHistory = useCallback(() => {
-    midiHistoryRef.current.push(selectedAssetId && midiClips[selectedAssetId]
-      ? midiClips[selectedAssetId]
-      : ({} as ParsedMidi));
-    if (midiHistoryRef.current.length > 100) midiHistoryRef.current.shift();
-  }, [midiClips, selectedAssetId]);
+    if (!selectedAssetId) return;
+    midiUndoHistoryRef.current.push({
+      assetId: selectedAssetId,
+      clip: midiClips[selectedAssetId] ?? null,
+    });
+    if (midiUndoHistoryRef.current.length > 100) midiUndoHistoryRef.current.shift();
+    midiRedoHistoryRef.current = [];
+    syncHistoryAvailability();
+  }, [midiClips, selectedAssetId, syncHistoryAvailability]);
+
+  const restoreMidiHistoryEntry = useCallback((entry: MidiHistoryEntry) => {
+    setSelectedAssetId(entry.assetId);
+    setSelectedNoteId(null);
+    setMidiClips((current) => {
+      if (!entry.clip) {
+        const remaining = { ...current };
+        delete remaining[entry.assetId];
+        return remaining;
+      }
+      return { ...current, [entry.assetId]: entry.clip };
+    });
+  }, []);
 
   const undoMidi = useCallback(() => {
-    if (midiHistoryRef.current.length === 0) return;
-    const previous = midiHistoryRef.current.pop();
-    if (!selectedAssetId || !previous) return;
-    setMidiClips((current) => (current[selectedAssetId] ? { ...current, [selectedAssetId]: previous } : current));
-    toast.success("Undo last MIDI edit");
-  }, [selectedAssetId]);
+    const previous = midiUndoHistoryRef.current.pop();
+    if (!previous) return;
+    midiRedoHistoryRef.current.push({
+      assetId: previous.assetId,
+      clip: midiClips[previous.assetId] ?? null,
+    });
+    restoreMidiHistoryEntry(previous);
+    syncHistoryAvailability();
+    toast.success("Undid MIDI edit");
+  }, [midiClips, restoreMidiHistoryEntry, syncHistoryAvailability]);
+
+  const redoMidi = useCallback(() => {
+    const next = midiRedoHistoryRef.current.pop();
+    if (!next) return;
+    midiUndoHistoryRef.current.push({
+      assetId: next.assetId,
+      clip: midiClips[next.assetId] ?? null,
+    });
+    restoreMidiHistoryEntry(next);
+    syncHistoryAvailability();
+    toast.success("Redid MIDI edit");
+  }, [midiClips, restoreMidiHistoryEntry, syncHistoryAvailability]);
+
+  const performHistoryShortcut = useCallback((event: KeyboardEvent) => {
+    if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "z") return;
+    const target = event.target as HTMLElement | null;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+    event.preventDefault();
+    if (event.shiftKey) redoMidi();
+    else undoMidi();
+  }, [redoMidi, undoMidi]);
+
+  useEffect(() => {
+    window.addEventListener("keydown", performHistoryShortcut);
+    return () => window.removeEventListener("keydown", performHistoryShortcut);
+  }, [performHistoryShortcut]);
 
   const decodeAudio = useCallback(async (assetId: string, file: File): Promise<AudioBuffer> => {
     const cached = audioBuffersRef.current[assetId];
@@ -452,16 +516,6 @@ export function DawClient() {
     };
     writeStored(sessionKey, payload);
   }, [assets, layers, midiClips, selectedAssetId, sessionBpm, sessionKey]);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "z") return;
-      event.preventDefault();
-      undoMidi();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [undoMidi]);
 
   const stopPlayback = useCallback(() => {
     stopPlaybackRef.current?.();
@@ -834,33 +888,37 @@ export function DawClient() {
 
   return (
     <div className="animate-fade-up space-y-4">
-      <div className="panel glass-shine flex flex-wrap items-center justify-between gap-4 rounded-[1.75rem] p-4">
+      <GlassSurface className="panel glass-shine flex flex-wrap items-center justify-between gap-4 rounded-[1.75rem] p-4">
         <div className="flex items-center gap-4">
-          <div className="glass-pill flex items-center gap-1 bg-black/40 px-3 py-1.5">
-            <button type="button" onClick={() => { stopPlayback(); setCurrentTime(0); }} aria-label="Reset to start" className="p-1 transition-colors hover:text-[var(--color-copper)]">
-              <RotateCcw className="h-4 w-4" />
-            </button>
-            <button type="button" onClick={togglePlayback} className={`p-1 transition-colors ${isPlaying ? "text-[var(--color-mint)]" : "hover:text-[var(--color-mint)]"}`}>
-              {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current" />}
-            </button>
-          </div>
+          <GlassControl>
+            <div className="glass-pill flex items-center gap-1 bg-black/40 px-3 py-1.5">
+              <button type="button" onClick={() => { stopPlayback(); setCurrentTime(0); }} aria-label="Reset to start" className="p-1 transition-colors hover:text-[var(--color-copper)]">
+                <RotateCcw className="h-4 w-4" />
+              </button>
+              <button type="button" onClick={togglePlayback} className={`p-1 transition-colors ${isPlaying ? "text-[var(--color-mint)]" : "hover:text-[var(--color-mint)]"}`}>
+                {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current" />}
+              </button>
+            </div>
+          </GlassControl>
           <div className="font-mono text-xl tabular-nums tracking-tighter text-[var(--color-mint)]">
             {formatClock(currentTime)}
           </div>
           <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-sand-2)]">
             {sessionDuration.toFixed(1)}s session
           </div>
-          <label className="glass-pill flex items-center gap-2 bg-black/40 px-3 py-1.5">
-            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">BPM</span>
-            <input
-              type="number"
-              min={40}
-              max={300}
-              value={sessionBpm}
-              onChange={(event) => setSessionBpm(Math.max(40, Math.min(300, Number(event.target.value) || 120)))}
-              className="w-12 border-none bg-transparent font-mono text-sm font-bold text-[var(--color-mint)] outline-none"
-            />
-          </label>
+          <GlassControl>
+            <label className="glass-pill flex items-center gap-2 bg-black/40 px-3 py-1.5">
+              <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">BPM</span>
+              <input
+                type="number"
+                min={40}
+                max={300}
+                value={sessionBpm}
+                onChange={(event) => setSessionBpm(Math.max(40, Math.min(300, Number(event.target.value) || 120)))}
+                className="w-12 border-none bg-transparent font-mono text-sm font-bold text-[var(--color-mint)] outline-none"
+              />
+            </label>
+          </GlassControl>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -877,7 +935,28 @@ export function DawClient() {
             <Save className="h-3.5 w-3.5" />
             Save to song
           </button>
-          <button type="button" onClick={undoMidi} className="glass-pill px-3 py-2 text-[8px] font-black uppercase text-[var(--color-copper)]">Undo</button>
+          <button
+            type="button"
+            onClick={undoMidi}
+            disabled={!historyAvailability.canUndo}
+            aria-label="Undo MIDI edit"
+            title="Undo (Cmd/Ctrl+Z)"
+            className="glass-pill flex items-center gap-1 px-3 py-2 text-[8px] font-black uppercase text-[var(--color-copper)] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+            Undo
+          </button>
+          <button
+            type="button"
+            onClick={redoMidi}
+            disabled={!historyAvailability.canRedo}
+            aria-label="Redo MIDI edit"
+            title="Redo (Cmd/Ctrl+Shift+Z)"
+            className="glass-pill flex items-center gap-1 px-3 py-2 text-[8px] font-black uppercase text-[var(--color-copper)] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Redo2 className="h-3.5 w-3.5" />
+            Redo
+          </button>
           <button type="button" onClick={quantizeSelected} className="glass-pill flex items-center gap-1.5 px-3 py-2 text-[8px] font-black uppercase text-[var(--color-brass)]">
             <Magnet className="h-3 w-3" />
             Quantize
@@ -885,19 +964,19 @@ export function DawClient() {
           <button type="button" onClick={() => addTrack("midi")} className="glass-pill px-3 py-2 text-[8px] font-black uppercase text-[var(--color-brass)]">+ MIDI track</button>
           <button type="button" onClick={() => addTrack("audio")} className="glass-pill px-3 py-2 text-[8px] font-black uppercase text-[var(--color-mint)]">+ Audio track</button>
         </div>
-      </div>
+      </GlassSurface>
 
       <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
         <div className="space-y-2">
-          <div className="panel flex h-10 items-center justify-between rounded-xl px-3">
+          <GlassSurface className="panel flex h-10 items-center justify-between rounded-xl px-3">
             <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Tracks</span>
             <Maximize2 className="h-3 w-3 opacity-30" />
-          </div>
+          </GlassSurface>
           {layers.map((layer) => {
             const clip = layer.assetId ? midiClips[layer.assetId] : undefined;
             const noteCount = getLayerNotes(clip, layer.midiTrackIndex).length;
             return (
-              <div key={layer.id} className="panel flex min-h-[140px] flex-col justify-between gap-3 rounded-xl p-3">
+              <GlassSurface key={layer.id} className="panel flex min-h-[140px] flex-col justify-between gap-3 rounded-xl p-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className={`h-2 w-2 rounded-full ${layer.kind === "audio" ? "bg-[var(--color-mint)]" : "bg-[var(--color-brass)]"}`} />
                   <input className="w-full border-none bg-transparent text-xs font-bold outline-none focus:text-[var(--color-copper)]" value={layer.name} onChange={(event) => updateLayer(layer.id, { name: event.target.value })} />
@@ -936,7 +1015,7 @@ export function DawClient() {
                   <button type="button" className={`flex-1 rounded border py-1 text-[8px] font-black ${layer.mute ? "border-red-500/50 bg-red-500/20 text-red-500" : "border-white/10 opacity-50"}`} onClick={() => updateLayer(layer.id, { mute: !layer.mute })}>Mute</button>
                   <button type="button" className={`flex-1 rounded border py-1 text-[8px] font-black ${layer.solo ? "border-yellow-500/50 bg-yellow-500/20 text-yellow-500" : "border-white/10 opacity-50"}`} onClick={() => updateLayer(layer.id, { solo: !layer.solo })}>Solo</button>
                 </div>
-              </div>
+              </GlassSurface>
             );
           })}
           {layers.length === 0 ? (
@@ -944,7 +1023,7 @@ export function DawClient() {
           ) : null}
         </div>
 
-        <div className="panel flex min-h-[600px] flex-col overflow-hidden rounded-[1.25rem] bg-black/40">
+        <GlassSurface className="panel flex min-h-[600px] flex-col overflow-hidden rounded-[1.25rem] bg-black/40">
           <div className="relative flex h-10 overflow-x-auto border-b border-white/5">
             {Array.from({ length: Math.ceil(sessionDuration) + 2 }, (_, second) => (
               <div key={second} className="w-[60px] flex-none border-r border-white/5 pl-1 pt-1 font-mono text-[9px] tabular-nums text-zinc-600">
@@ -1013,11 +1092,11 @@ export function DawClient() {
               })}
             </div>
           </div>
-        </div>
+        </GlassSurface>
       </div>
 
       {selectedClip ? (
-        <div className="panel glass-shine space-y-4 rounded-[1.75rem] p-5">
+        <GlassSurface className="panel glass-shine space-y-4 rounded-[1.75rem] p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Music2 className="h-5 w-5 text-[var(--color-brass)]" />
@@ -1055,18 +1134,18 @@ export function DawClient() {
           />
 
           {selectedNote ? (
-            <div className="modal-inset-panel flex flex-wrap items-end gap-4 rounded-[1rem] p-4">
+            <GlassSurface className="modal-inset-panel flex flex-wrap items-end gap-4 rounded-[1rem] p-4">
               <div>
                 <div className="field-label">Note</div>
                 <div className="text-2xl font-black">{midiNoteName(selectedNote.note)}</div>
               </div>
               <label className="field-group min-w-[180px]">
                 <span className="field-label">Pitch</span>
-                <input type="number" min={0} max={127} className="field py-2" value={selectedNote.note} onChange={(event) => updateNote(selectedNote.id, { note: Number(event.target.value) })} />
+                <input type="number" min={0} max={127} className="field py-2" value={selectedNote.note} onChange={(event) => { pushMidiHistory(); updateNote(selectedNote.id, { note: Number(event.target.value) }); }} />
               </label>
               <label className="field-group min-w-[180px]">
                 <span className="field-label">Velocity ({selectedNote.velocity})</span>
-                <input type="range" min={1} max={127} value={selectedNote.velocity} onChange={(event) => updateNote(selectedNote.id, { velocity: Number(event.target.value) })} className="w-full accent-[var(--color-copper)]" />
+                <input type="range" min={1} max={127} value={selectedNote.velocity} onChange={(event) => { pushMidiHistory(); updateNote(selectedNote.id, { velocity: Number(event.target.value) }); }} className="w-full accent-[var(--color-copper)]" />
               </label>
               <label className="field-group min-w-[120px]">
                 <span className="field-label">Start</span>
@@ -1080,7 +1159,7 @@ export function DawClient() {
                 <Trash2 className="h-3.5 w-3.5" />
                 Delete note
               </button>
-            </div>
+            </GlassSurface>
           ) : (
             <p className="text-sm text-[var(--color-sand-2)]">
               <Pencil className="mr-1 inline h-3.5 w-3.5" />
@@ -1116,10 +1195,10 @@ export function DawClient() {
               </tbody>
             </table>
           </div>
-        </div>
+        </GlassSurface>
       ) : null}
 
-      <div className="panel rounded-[1.75rem] p-5">
+      <GlassSurface className="panel rounded-[1.75rem] p-5">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-sm font-black uppercase tracking-widest opacity-60">Asset browser</h3>
           <span className="text-[10px] font-bold text-zinc-500">{assets.length} items</span>
@@ -1150,7 +1229,7 @@ export function DawClient() {
             );
           })}
         </div>
-      </div>
+      </GlassSurface>
     </div>
   );
 }

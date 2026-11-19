@@ -392,15 +392,81 @@ async function ensureMusicSupportTables() {
   supportTablesReady = true;
 }
 
-async function requireOwnedSong(songId: string, userId: string) {
+async function getProjectAccessBySlug(userId: string, slug: string) {
   await ensureMusicSupportTables();
   const db = getMusicClient();
   const result = await db.execute({
-    sql: "select id from songs where id = ? and (user_id = ? or (project_slug is not null and project_slug != '')) limit 1",
-    args: [songId, userId],
+    sql: `
+      select
+        projects.id,
+        projects.user_id as owner_user_id,
+        coalesce(project_members.role, case when projects.user_id = ? then 'owner' else 'viewer' end) as role
+      from projects
+      left join project_members
+        on project_members.project_id = projects.id and project_members.user_id = ?
+      where projects.slug = ?
+        and (projects.user_id = ? or projects.is_shared_with_all = 1 or project_members.user_id = ?)
+      limit 1
+    `,
+    args: [userId, userId, slug, userId, userId],
   });
 
-  if (!result.rows[0]) {
+  const row = result.rows[0] as Record<string, unknown> | undefined;
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    ownerUserId: String(row.owner_user_id),
+    role: String(row.role),
+  };
+}
+
+async function requireEditableProjectBySlug(userId: string, slug: string) {
+  const access = await getProjectAccessBySlug(userId, slug);
+  if (!access) {
+    throw new Error("Project not found or access denied");
+  }
+  if (access.ownerUserId !== userId && access.role !== "owner" && access.role !== "editor") {
+    throw new Error("You do not have permission to edit this project");
+  }
+}
+
+async function requireEditableSong(songId: string, userId: string) {
+  await ensureMusicSupportTables();
+  const db = getMusicClient();
+  const result = await db.execute({
+    sql: `
+      select
+        songs.user_id,
+        songs.project_slug,
+        projects.user_id as project_owner_id,
+        (
+          select role
+          from project_members
+          where project_id = projects.id and user_id = ?
+          limit 1
+        ) as member_role
+      from songs
+      left join projects on projects.slug = songs.project_slug
+      where songs.id = ?
+      limit 1
+    `,
+    args: [userId, songId],
+  });
+  const row = result.rows[0] as Record<string, unknown> | undefined;
+  if (!row) {
+    throw new Error("Song not found");
+  }
+  if (row.project_slug && row.project_owner_id) {
+    if (
+      String(row.project_owner_id) !== userId &&
+      row.member_role !== "owner" &&
+      row.member_role !== "editor"
+    ) {
+      throw new Error("You do not have permission to edit this song");
+    }
+    return;
+  }
+  if (String(row.user_id) !== userId) {
     throw new Error("Song not found");
   }
 }
@@ -430,23 +496,51 @@ export async function listSongs(userId: string, search?: string) {
     from songs
     where (
       songs.user_id = ?
-      or (songs.project_slug is not null and songs.project_slug != '')
+      or exists (
+        select 1
+        from projects
+        where projects.slug = songs.project_slug
+          and (
+            projects.user_id = ?
+            or projects.is_shared_with_all = 1
+            or exists (
+              select 1 from project_members
+              where project_members.project_id = projects.id
+                and project_members.user_id = ?
+            )
+          )
+      )
     )
   `;
-  const args: string[] = [userId];
+  const args: string[] = [userId, userId, userId];
 
   if (normalizedSearch) {
     sql += `
       and (
         songs.title like ? or
         coalesce(songs.topic, '') like ? or
+        coalesce(songs.emotion, '') like ? or
         coalesce(songs.genre, '') like ? or
         coalesce(songs.language, '') like ? or
+        coalesce(songs.musical_key, '') like ? or
+        coalesce(songs.hook_summary, '') like ? or
+        coalesce(songs.vocal_style, '') like ? or
+        coalesce(songs.instrumentation, '') like ? or
         coalesce(songs.project_slug, '') like ?
       )
     `;
     const searchValue = `%${normalizedSearch}%`;
-    args.push(searchValue, searchValue, searchValue, searchValue, searchValue);
+    args.push(
+      searchValue,
+      searchValue,
+      searchValue,
+      searchValue,
+      searchValue,
+      searchValue,
+      searchValue,
+      searchValue,
+      searchValue,
+    );
   }
 
   sql += " order by coalesce(songs.saved_at, songs.synced_at) desc, songs.title asc";
@@ -476,8 +570,30 @@ export async function getSongDetail(id: string, userId: string) {
   await ensureMusicSupportTables();
   const db = getMusicClient();
   const songResult = await db.execute({
-    sql: "select * from songs where id = ? and (user_id = ? or (project_slug is not null and project_slug != '')) limit 1",
-    args: [id, userId],
+    sql: `
+      select songs.*
+      from songs
+      where songs.id = ?
+        and (
+          songs.user_id = ?
+          or exists (
+            select 1
+            from projects
+            where projects.slug = songs.project_slug
+              and (
+                projects.user_id = ?
+                or projects.is_shared_with_all = 1
+                or exists (
+                  select 1 from project_members
+                  where project_members.project_id = projects.id
+                    and project_members.user_id = ?
+                )
+              )
+          )
+        )
+      limit 1
+    `,
+    args: [id, userId, userId, userId],
   });
   const songRow = songResult.rows[0];
   if (!songRow) {
@@ -498,6 +614,8 @@ export async function getSongDetail(id: string, userId: string) {
 
 export async function createSong(userId: string, input: MusicSongDraftInput) {
   await ensureMusicSupportTables();
+  const projectSlug = normalizeText(input.project_slug);
+  if (projectSlug) await requireEditableProjectBySlug(userId, projectSlug);
   const db = getMusicClient();
   const now = isoNow();
   const id = crypto.randomUUID();
@@ -524,7 +642,7 @@ export async function createSong(userId: string, input: MusicSongDraftInput) {
     vocal_style: normalizeText(input.vocal_style),
     instrumentation: normalizeText(input.instrumentation),
     mood_tags_json: normalizeMoodTags(input.mood_tags_json) ?? null,
-    project_slug: normalizeText(input.project_slug),
+    project_slug: projectSlug,
     project_dir: normalizeText(input.project_dir),
     saved_at: now,
     enhanced_from_song_id: normalizeText(input.enhanced_from_song_id),
@@ -597,8 +715,13 @@ export async function createSong(userId: string, input: MusicSongDraftInput) {
 
 export async function updateSong(id: string, userId: string, updates: Record<string, unknown>) {
   await ensureMusicSupportTables();
+  await requireEditableSong(id, userId);
   const db = getMusicClient();
   const entries = Object.entries(updates).filter(([key, value]) => SONG_UPDATE_FIELDS.has(key) && value !== undefined);
+  const targetProjectSlug = entries.find(([key]) => key === "project_slug")?.[1];
+  if (typeof targetProjectSlug === "string" && targetProjectSlug.trim()) {
+    await requireEditableProjectBySlug(userId, targetProjectSlug.trim());
+  }
 
   if (entries.length === 0) {
     const existing = await getSongDetail(id, userId);
@@ -634,11 +757,10 @@ export async function updateSong(id: string, userId: string, updates: Record<str
 
   assignments.push("synced_at = ?");
   args.push(isoNow());
-  args.push(userId);
   args.push(id);
 
   const result = await db.execute({
-    sql: `update songs set ${assignments.join(", ")} where (user_id = ? or (project_slug is not null and project_slug != '')) and id = ?`,
+    sql: `update songs set ${assignments.join(", ")} where id = ?`,
     args,
   });
 
@@ -656,6 +778,7 @@ export async function updateSong(id: string, userId: string, updates: Record<str
 
 export async function deleteSong(id: string, userId: string) {
   await ensureMusicSupportTables();
+  await requireEditableSong(id, userId);
   const db = getMusicClient();
   const existing = await getSongDetail(id, userId);
 
@@ -677,7 +800,7 @@ export async function upsertSongPart(
   text: string | null,
   json: string | Record<string, unknown> | null | undefined,
 ) {
-  await requireOwnedSong(songId, userId);
+  await requireEditableSong(songId, userId);
   const db = getMusicClient();
   const normalizedName = name.trim();
   if (!normalizedName) {
@@ -714,7 +837,7 @@ export async function upsertSongPart(
 }
 
 export async function deleteSongPart(songId: string, userId: string, kind: "section" | "layer", name: string) {
-  await requireOwnedSong(songId, userId);
+  await requireEditableSong(songId, userId);
   const db = getMusicClient();
   const normalizedName = name.trim();
   if (!normalizedName) {
@@ -979,11 +1102,11 @@ function mapPartitureRow(row: Record<string, unknown>): MusicPartitureRecord {
 
 export async function listSongPartitures(songId: string, userId: string) {
   await ensureMusicSupportTables();
-  await requireOwnedSong(songId, userId);
+  if (!(await getSongDetail(songId, userId))) throw new Error("Song not found");
   const db = getMusicClient();
   const result = await db.execute({
-    sql: "select * from song_partitures where song_id = ? and user_id = ? order by instrument asc, slot asc, updated_at desc",
-    args: [songId, userId],
+    sql: "select * from song_partitures where song_id = ? order by instrument asc, slot asc, updated_at desc",
+    args: [songId],
   });
 
   return result.rows.map((row) => mapPartitureRow(row as Record<string, unknown>));
@@ -995,7 +1118,7 @@ export async function createSongPartiture(
   input: Record<string, unknown>,
 ) {
   await ensureMusicSupportTables();
-  await requireOwnedSong(songId, userId);
+  await requireEditableSong(songId, userId);
   const db = getMusicClient();
   const now = isoNow();
   const row = {
@@ -1037,14 +1160,15 @@ export async function updateSongPartiture(partitureId: string, userId: string, i
   await ensureMusicSupportTables();
   const db = getMusicClient();
   const existing = await db.execute({
-    sql: "select * from song_partitures where id = ? and user_id = ? limit 1",
-    args: [partitureId, userId],
+    sql: "select * from song_partitures where id = ? limit 1",
+    args: [partitureId],
   });
   const row = existing.rows[0] as Record<string, unknown> | undefined;
 
   if (!row) {
     throw new Error("Partiture not found");
   }
+  await requireEditableSong(String(row.song_id), userId);
 
   const next = {
     ...row,
@@ -1071,9 +1195,16 @@ export async function updateSongPartiture(partitureId: string, userId: string, i
 export async function deleteSongPartiture(partitureId: string, userId: string) {
   await ensureMusicSupportTables();
   const db = getMusicClient();
+  const existing = await db.execute({
+    sql: "select song_id from song_partitures where id = ? limit 1",
+    args: [partitureId],
+  });
+  const row = existing.rows[0] as Record<string, unknown> | undefined;
+  if (!row) throw new Error("Partiture not found");
+  await requireEditableSong(String(row.song_id), userId);
   const result = await db.execute({
-    sql: "delete from song_partitures where id = ? and user_id = ?",
-    args: [partitureId, userId],
+    sql: "delete from song_partitures where id = ?",
+    args: [partitureId],
   });
 
   if ((result.rowsAffected ?? 0) === 0) {
@@ -1207,9 +1338,10 @@ export async function createProject(userId: string, input: MusicProjectDraftInpu
   if (Array.isArray(input.memberUserIds)) {
     for (const memberId of input.memberUserIds) {
       if (memberId && memberId !== userId) {
+        const role = input.memberRoles?.[memberId] === "viewer" ? "viewer" : "editor";
         await db.execute({
-          sql: "insert into project_members (id, project_id, user_id, role, created_at) values (?, ?, ?, 'editor', ?)",
-          args: [crypto.randomUUID(), id, memberId, now],
+          sql: "insert into project_members (id, project_id, user_id, role, created_at) values (?, ?, ?, ?, ?)",
+          args: [crypto.randomUUID(), id, memberId, role, now],
         });
       }
     }
@@ -1228,6 +1360,9 @@ export async function updateProject(id: string, userId: string, input: MusicProj
   const existing = await getProject(id, userId);
   if (!existing) {
     throw new Error("Project not found");
+  }
+  if (existing.userId !== userId) {
+    throw new Error("Only the project owner can update project settings or member roles");
   }
 
   const now = isoNow();
@@ -1255,9 +1390,10 @@ export async function updateProject(id: string, userId: string, input: MusicProj
     });
     for (const memberId of input.memberUserIds) {
       if (memberId && memberId !== existing.userId) {
+        const role = input.memberRoles?.[memberId] === "viewer" ? "viewer" : "editor";
         await db.execute({
-          sql: "insert into project_members (id, project_id, user_id, role, created_at) values (?, ?, ?, 'editor', ?)",
-          args: [crypto.randomUUID(), existing.id, memberId, now],
+          sql: "insert into project_members (id, project_id, user_id, role, created_at) values (?, ?, ?, ?, ?)",
+          args: [crypto.randomUUID(), existing.id, memberId, role, now],
         });
       }
     }
@@ -1276,6 +1412,9 @@ export async function deleteProject(id: string, userId: string): Promise<void> {
   const existing = await getProject(id, userId);
   if (!existing) {
     throw new Error("Project not found");
+  }
+  if (existing.userId !== userId) {
+    throw new Error("Only the project owner can delete this project");
   }
 
   await db.execute({ sql: "delete from project_members where project_id = ?", args: [existing.id] });

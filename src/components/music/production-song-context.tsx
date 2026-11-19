@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
+import { GlassSurface } from "@/components/ui/glass-surface";
 import { fetchSongs } from "@/lib/music/client";
 
 type ProductionSong = { id: string; title: string };
@@ -16,7 +17,7 @@ type ProductionSongContextValue = {
 
 const ProductionSongContext = createContext<ProductionSongContextValue | null>(null);
 
-export function ProductionSongProvider({ children }: { children: ReactNode }) {
+export function ProductionSongProvider({ children, initialSongId }: { children: ReactNode; initialSongId?: string }) {
   const [songs, setSongs] = useState<ProductionSong[]>([]);
   const [selectedSongId, setSelectedSongId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -42,7 +43,7 @@ export function ProductionSongProvider({ children }: { children: ReactNode }) {
 
     void (async () => {
       try {
-        await refreshSongs();
+        await refreshSongs(initialSongId);
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -53,7 +54,7 @@ export function ProductionSongProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [refreshSongs]);
+  }, [initialSongId, refreshSongs]);
 
   return (
     <ProductionSongContext
@@ -84,22 +85,22 @@ export function ProductionSongPicker() {
 
   if (loading) {
     return (
-      <div className="glass-card-soft animate-fade-up rounded-[1.25rem] px-4 py-3 text-sm text-[var(--color-sand-2)]">
+      <GlassSurface className="glass-card-soft animate-fade-up rounded-[1.25rem] px-4 py-3 text-sm text-[var(--color-sand-2)]">
         Loading songs...
-      </div>
+      </GlassSurface>
     );
   }
 
   if (songs.length === 0) {
     return (
-      <div className="glass-card-soft animate-fade-up rounded-[1.25rem] px-4 py-3 text-sm text-[var(--color-sand-2)]">
+      <GlassSurface className="glass-card-soft animate-fade-up rounded-[1.25rem] px-4 py-3 text-sm text-[var(--color-sand-2)]">
         No songs yet. Create one in the Song tab.
-      </div>
+      </GlassSurface>
     );
   }
 
   return (
-    <div className="glass-card-soft glass-shine animate-fade-up flex flex-wrap items-center gap-3 rounded-[1.25rem] px-4 py-3">
+    <GlassSurface className="glass-card-soft glass-shine animate-fade-up flex flex-wrap items-center gap-3 rounded-[1.25rem] px-4 py-3">
       <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-brass)]">Active song</span>
       <select
         className="field min-w-[220px] flex-1"
@@ -110,6 +111,6 @@ export function ProductionSongPicker() {
           <option key={song.id} value={song.id}>{song.title}</option>
         ))}
       </select>
-    </div>
+    </GlassSurface>
   );
 }

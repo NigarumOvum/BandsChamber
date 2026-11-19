@@ -3,6 +3,7 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { Volume2, Zap, Layers } from "lucide-react";
 import { useAudio } from "@/components/music/audio-provider";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import {
   GUITAR_TUNINGS,
   BASS_TUNINGS,
@@ -211,7 +212,7 @@ export function InteractiveFretboard({
         </div>
       )}
 
-      <div className="panel glass-shine overflow-hidden rounded-[1.75rem] border border-white/10 bg-black/30 p-6">
+      <GlassSurface className="panel glass-shine overflow-hidden rounded-[1.75rem] border border-white/10 bg-black/30 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="eyebrow">Interactive Fretboard</div>
@@ -303,7 +304,7 @@ export function InteractiveFretboard({
             </button>
           ))}
         </div>
-      </div>
+      </GlassSurface>
     </div>
   );
 }

@@ -6,6 +6,8 @@ import { useState } from "react";
 import { Button } from "@heroui/react";
 import { toast } from "sonner";
 
+import { GlassSurface } from "../ui/glass-surface";
+
 type VerifyEmailClientProps = {
   token: string;
 };
@@ -41,7 +43,7 @@ export function VerifyEmailClient({ token }: VerifyEmailClientProps) {
   }
 
   return (
-    <div className="panel w-full space-y-4 rounded-[2.25rem] p-8 text-[var(--color-sand-2)] lg:p-10">
+    <GlassSurface className="panel w-full space-y-4 rounded-[2.25rem] p-8 text-[var(--color-sand-2)] lg:p-10">
       <div className="eyebrow">Account verification</div>
       <h1 className="text-3xl font-black tracking-tight text-[var(--color-foreground)]">
         {status === "success" ? "Email confirmed" : "Confirm your email"}
@@ -53,6 +55,6 @@ export function VerifyEmailClient({ token }: VerifyEmailClientProps) {
         </Button>
       ) : null}
       <Link href="/login" className="inline-block text-[var(--color-brass)] transition hover:text-[var(--color-foreground)]">Go to login</Link>
-    </div>
+    </GlassSurface>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from "react";
 import { Globe } from "lucide-react";
 
 import { usePersistentState, useCurrentUserId } from "@/lib/persist";
@@ -24,11 +24,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [stored, setStored] = usePersistentState<string>("app_locale", DEFAULT_LOCALE, { userId });
   const locale: Locale = isLocale(stored) ? stored : DEFAULT_LOCALE;
 
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   const setLocale = useCallback(
-    (next: Locale) => {
-      document.documentElement.lang = next;
-      setStored(next);
-    },
+    (next: Locale) => setStored(next),
     [setStored],
   );
 

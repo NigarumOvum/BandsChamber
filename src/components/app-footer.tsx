@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Crown, Music2, ShieldCheck } from "lucide-react";
 
 import { useI18n } from "@/components/language-provider";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 export function AppFooter() {
   const { t } = useI18n();
@@ -28,8 +29,9 @@ export function AppFooter() {
   ];
 
   return (
-    <footer className="panel glass-shine mt-4 rounded-[1.25rem] p-5 sm:p-6 animate-fade-up">
-      <div className="grid gap-6 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
+    <footer className="mt-4 animate-fade-up">
+      <GlassSurface className="panel glass-shine rounded-[1.25rem] p-5 sm:p-6">
+        <div className="grid gap-6 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <div className="glass-pill flex h-10 w-10 items-center justify-center text-[var(--color-copper)]">
@@ -77,6 +79,7 @@ export function AppFooter() {
           <Crown className="h-3.5 w-3.5" /> {t("footer.goPro")}
         </Link>
       </div>
+      </GlassSurface>
     </footer>
   );
 }

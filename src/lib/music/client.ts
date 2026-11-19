@@ -31,6 +31,21 @@ export function fetchSongs(search?: string) {
   return requestJson<{ songs: MusicSongSummary[] }>(`/api/music/songs${params}`);
 }
 
+export type WorkspaceSearchResult = {
+  id: string;
+  kind: "song" | "project" | "prompt";
+  title: string;
+  description: string;
+  href: string;
+};
+
+export function searchWorkspace(query: string, signal?: AbortSignal) {
+  return requestJson<{ results: WorkspaceSearchResult[] }>(
+    `/api/music/search?q=${encodeURIComponent(query)}`,
+    { signal },
+  );
+}
+
 export function fetchSongDetail(id: string) {
   return requestJson<{ song: MusicSongDetail }>(`/api/music/songs/${id}`);
 }

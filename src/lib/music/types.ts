@@ -162,6 +162,7 @@ export interface MusicProjectDraftInput {
   color?: string | null;
   isSharedWithAll?: boolean;
   memberUserIds?: string[];
+  memberRoles?: Record<string, "editor" | "viewer">;
 }
 
 export interface MusicCollaboratorUser {
@@ -169,4 +170,3 @@ export interface MusicCollaboratorUser {
   name: string | null;
   email: string;
 }
-

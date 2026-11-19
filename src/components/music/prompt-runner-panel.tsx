@@ -6,6 +6,7 @@ import { Button, Spinner } from "@heroui/react";
 import { Copy, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
+import { GlassSurface } from "@/components/ui/glass-surface";
 import { fetchSongs, runPromptOnSong } from "@/lib/music/client";
 import type { MusicSongSummary } from "@/lib/music/types";
 
@@ -86,7 +87,7 @@ export function PromptRunnerPanel({
   }
 
   return (
-    <div className="modal-inset-panel space-y-3 rounded-[1.25rem] p-4">
+    <GlassSurface className="modal-inset-panel space-y-3 rounded-[1.25rem] p-4">
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-[var(--color-brass)]" />
         <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-brass)]">
@@ -151,6 +152,6 @@ export function PromptRunnerPanel({
           </pre>
         </div>
       ) : null}
-    </div>
+    </GlassSurface>
   );
 }

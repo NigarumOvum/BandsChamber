@@ -6,6 +6,7 @@ import { BadgeCheck, Crown, Loader2, ShieldCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { useI18n } from "@/components/language-provider";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import type { MembershipPayment, MembershipPlan, MembershipSubscription } from "@/lib/membership";
 import {
   cancelSubscription,
@@ -194,9 +195,9 @@ export function MembershipClient() {
 
   if (loading) {
     return (
-      <div className="panel flex min-h-[280px] items-center justify-center rounded-[1.75rem]">
+      <GlassSurface className="panel flex min-h-[280px] items-center justify-center rounded-[1.75rem]">
         <Loader2 className="h-6 w-6 animate-spin text-[var(--color-brass)]" />
-      </div>
+      </GlassSurface>
     );
   }
 
@@ -205,7 +206,7 @@ export function MembershipClient() {
   return (
     <div className="space-y-5">
       {/* Current membership */}
-      <div className="panel glass-shine flex flex-wrap items-center justify-between gap-3 rounded-[1.75rem] p-5">
+      <GlassSurface className="panel glass-shine flex flex-wrap items-center justify-between gap-3 rounded-[1.75rem] p-5">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--color-brass)] text-black">
             <Crown className="h-5 w-5" />
@@ -241,7 +242,7 @@ export function MembershipClient() {
             <XCircle className="h-3.5 w-3.5" /> {t("membership.cancel")}
           </button>
         ) : null}
-      </div>
+      </GlassSurface>
 
       {/* Plans */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -249,7 +250,7 @@ export function MembershipClient() {
           const isCurrent = activePlanId === plan.id;
           const busy = busyPlan === plan.id;
           return (
-            <div
+            <GlassSurface
               key={plan.id}
               className={`panel glass-shine flex flex-col rounded-[1.75rem] p-5 ${
                 isCurrent ? "border-[var(--color-brass)]" : ""
@@ -308,13 +309,13 @@ export function MembershipClient() {
                   </button>
                 </div>
               ) : null}
-            </div>
+            </GlassSurface>
           );
         })}
       </div>
 
       {/* Payment history */}
-      <div className="panel glass-shine rounded-[1.75rem] p-5">
+      <GlassSurface className="panel glass-shine rounded-[1.75rem] p-5">
         <div className="eyebrow mb-3">{t("membership.paymentHistory")}</div>
         {payments.length === 0 ? (
           <p className="text-xs text-[var(--color-sand-2)]">{t("membership.noPayments")}</p>
@@ -341,7 +342,7 @@ export function MembershipClient() {
           <ShieldCheck className="h-3.5 w-3.5 text-[var(--color-mint)]" />
           {t("membership.securedNote")}
         </p>
-      </div>
+      </GlassSurface>
     </div>
   );
 }

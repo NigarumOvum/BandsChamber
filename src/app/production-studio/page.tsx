@@ -9,7 +9,7 @@ import {
 import { requireCurrentUser } from "@/lib/auth";
 
 type ProductionStudioPageProps = {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; songId?: string; projectId?: string }>;
 };
 
 export default async function ProductionStudioPage({ searchParams }: ProductionStudioPageProps) {
@@ -20,7 +20,7 @@ export default async function ProductionStudioPage({ searchParams }: ProductionS
     redirect("/account?denied=production-studio");
   }
 
-  const { tab } = await searchParams;
+  const { tab, songId, projectId } = await searchParams;
   const initialTab = resolveProductionStudioTab(tab, allowedTabs);
 
   return (
@@ -35,6 +35,8 @@ export default async function ProductionStudioPage({ searchParams }: ProductionS
           label: entry.label,
         }))}
         initialTab={initialTab}
+        initialSongId={songId}
+        initialProjectId={projectId}
       />
     </AppShell>
   );

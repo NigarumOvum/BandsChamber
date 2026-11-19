@@ -9,6 +9,7 @@ import { KeyRound, LockKeyhole, UserRoundPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { useI18n } from "@/components/language-provider";
+import { GlassSurface } from "@/components/ui/glass-surface";
 
 type AuthScreenProps = {
   mode: "login" | "register";
@@ -126,7 +127,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   return (
     <div className="grain min-h-screen px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl items-center justify-center">
-        <Card className="panel w-full max-w-5xl overflow-hidden rounded-[2.25rem] border-0 bg-transparent shadow-none">
+        <Card className="w-full max-w-5xl overflow-hidden rounded-[2.25rem]">
+          <GlassSurface className="panel rounded-[2.25rem]">
           <CardBody className="grid gap-0 p-0 lg:grid-cols-[0.95fr_1.05fr]">
             <section className="order-2 border-t border-[var(--color-border)] bg-[linear-gradient(155deg,var(--color-info-surface),transparent_58%)] p-6 sm:p-8 lg:order-1 lg:border-r lg:border-t-0 lg:p-10 xl:p-12">
               <div className="eyebrow">BandsChamber Studio</div>
@@ -137,9 +139,9 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 The full app is now private to authenticated users. Confirm your email to activate your account, then sign in to access the Production Studio, Music Toolkit, and Prompt Library.
               </p>
               <div className="mt-8 space-y-3 text-sm text-[var(--color-sand-2)]">
-                <div className="glass-card-soft rounded-[1.5rem] px-4 py-4">Private access to the full studio dashboard</div>
-                <div className="glass-card-soft rounded-[1.5rem] px-4 py-4">User-scoped templates, snapshots, and partitures</div>
-                <div className="glass-card-soft rounded-[1.5rem] px-4 py-4">Shared Turso-backed song catalog with protected APIs</div>
+                <GlassSurface className="glass-card-soft rounded-[1.5rem] px-4 py-4">Private access to the full studio dashboard</GlassSurface>
+                <GlassSurface className="glass-card-soft rounded-[1.5rem] px-4 py-4">User-scoped templates, snapshots, and partitures</GlassSurface>
+                <GlassSurface className="glass-card-soft rounded-[1.5rem] px-4 py-4">Shared Turso-backed song catalog with protected APIs</GlassSurface>
               </div>
             </section>
             <section className="order-1 p-6 sm:p-8 lg:order-2 lg:p-10 xl:p-12">
@@ -252,6 +254,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
               ) : null}
             </section>
           </CardBody>
+          </GlassSurface>
         </Card>
       </div>
     </div>

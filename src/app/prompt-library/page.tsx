@@ -1,7 +1,13 @@
 import { AppShell } from "@/components/app-shell";
 import { TemplatesClient } from "@/components/music/templates-client";
 
-export default function PromptLibraryPage() {
+type PromptLibraryPageProps = {
+  searchParams: Promise<{ templateId?: string }>;
+};
+
+export default async function PromptLibraryPage({ searchParams }: PromptLibraryPageProps) {
+  const { templateId } = await searchParams;
+
   return (
     <AppShell
       title="Prompt Library"
@@ -18,6 +24,7 @@ export default function PromptLibraryPage() {
         itemLabel="Prompt"
         namePlaceholder="Prompt name"
         instructionsPlaceholder="Prompt text"
+        initialTemplateId={templateId}
       />
     </AppShell>
   );

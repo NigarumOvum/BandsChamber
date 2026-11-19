@@ -31,6 +31,7 @@ import {
 import { toast } from "sonner";
 
 import { useProductionSong } from "@/components/music/production-song-context";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import { readStoredRaw, removeStored, useCurrentUserId, userKey, writeStored } from "@/lib/persist";
 import {
   createPartiture,
@@ -638,7 +639,7 @@ export function SongStudioClient() {
 
       <section className="space-y-5">
         {songDraftAvailable && selectedSong ? (
-          <div className="panel flex flex-wrap items-center justify-between gap-2 rounded-[1.25rem] border border-[var(--color-brass)]/30 bg-[var(--color-brass)]/5 p-3">
+          <GlassSurface className="panel flex flex-wrap items-center justify-between gap-2 rounded-[1.25rem] border border-[var(--color-brass)]/30 bg-[var(--color-brass)]/5 p-3">
             <p className="text-xs text-[var(--color-sand-1)]">
               Unsaved song changes were autosaved locally. Restore the draft or discard it.
             </p>
@@ -658,15 +659,15 @@ export function SongStudioClient() {
                 Discard
               </button>
             </div>
-          </div>
+          </GlassSurface>
         ) : null}
         {loading ? (
-          <div className="panel flex min-h-[360px] items-center justify-center rounded-[1.75rem] p-6">
+          <GlassSurface className="panel flex min-h-[360px] items-center justify-center rounded-[1.75rem] p-6">
             <Spinner color="warning" />
-          </div>
+          </GlassSurface>
         ) : selectedSong ? (
           <>
-            <div className="panel glass-shine rounded-[1.25rem] p-4">
+            <GlassSurface className="panel glass-shine rounded-[1.25rem] p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <div>
@@ -724,9 +725,9 @@ export function SongStudioClient() {
               </div>
 
 
-            </div>
+            </GlassSurface>
 
-            <div className="panel glass-shine rounded-[1.75rem] p-5">
+            <GlassSurface className="panel glass-shine rounded-[1.75rem] p-5">
               <div className="grid gap-4 md:grid-cols-2">
                 <FieldGroup label="Title">
                   <input
@@ -895,17 +896,17 @@ export function SongStudioClient() {
                   </div>
                 </FieldGroup>
               </div>
-            </div>
+            </GlassSurface>
           </>
         ) : (
-          <div className="panel rounded-[1.75rem] p-8 text-center">
+          <GlassSurface className="panel rounded-[1.75rem] p-8 text-center">
             <Music2 className="mx-auto h-10 w-10 text-[var(--color-brass)] opacity-60" />
             <p className="mt-4 text-sm text-[var(--color-sand-2)]">No songs in your library yet.</p>
             <Button className="mt-4 bg-[var(--color-copper)] text-white" radius="full" onPress={() => void createDraftSong()}>
               <Plus className="h-4 w-4" />
               Create first song
             </Button>
-          </div>
+          </GlassSurface>
         )}
       </section>
 

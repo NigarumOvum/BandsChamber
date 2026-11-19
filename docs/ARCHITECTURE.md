@@ -5,7 +5,12 @@
 - **Next.js 16** (App Router, React 19), TypeScript, Tailwind CSS v4
 - **Auth + app data**: single shared **Turso/libSQL** database
   (`MUSIC_TURSO_DATABASE_URL` / `MUSIC_TURSO_AUTH_TOKEN`)
-- **UI**: HeroUI components, Framer Motion, lucide-react icons, `sonner` toasts
+- **UI**: HeroUI components, Framer Motion, lucide-react icons, `sonner` toasts;
+  **liquid glass** refraction layer via `@samasante/liquid-glass`
+  (`src/components/ui/glass-surface.tsx` → `<GlassSurface>`, site-tuned optics)
+  layered on top of the existing CSS glassmorphism utility classes
+  (`.panel`, `.glass-pill`, `.glass-card-soft`, `.glass-shine`), which stay the
+  cross-browser base/fallback (live-DOM bending is Chrome/Edge-only)
 - **Audio**: raw Web Audio (synth voices, Karplus-Strong plucks, metronome,
   MIDI scheduler) + optional real-sample engine (`src/lib/music/sample-engine.ts`,
   files under `public/samples/`, CDN via `NEXT_PUBLIC_SAMPLE_BASE_URL`)
@@ -104,6 +109,11 @@ Pro $9.99 mo / Lifetime $149), `membership_subscriptions`
 - `src/app/` — pages + `api/` route handlers (auth, account, music, membership)
 - `src/components/music/` — feature clients (toolkit, studio, daw, tabs…)
 - `src/components/{auth,account,membership,pwa,ui}/` — cross-cutting UI
+- `src/components/ui/glass-surface.tsx` — shared `<GlassSurface>` primitive
+  (site-tuned `liquidGlassOptics`, `display:block` default) used by the shell,
+  cards, sidebars, form fields, list rows, and modals; `globals.css` supplies
+  the `--glass-rim*`/`--glass-dispersion` tokens and the `[data-lg-layer]`
+  out-of-flow pin for the layers `<Glass>` injects
 - `src/lib/` — `auth.ts`, `access.ts`, `hub-access.ts`, `api.ts`,
   `music/*` (domain libs), `i18n/*`, `persist.ts`, `membership*.ts`
 - `src/hooks/use-pwa.ts`, `public/manifest.webmanifest`, `public/sw.js`

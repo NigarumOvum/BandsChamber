@@ -29,12 +29,17 @@
 - **PWA/i18n**: installable from a production build; offline reload shows
   pill + shell; locale switch translates chrome + music strings and persists
   per user; footer links/CTAs resolve. (FR-037–FR-040)
+- **UI / glass**: navbar, footer, page panels, dashboard & collapsible cards,
+  sidebars, form fields, list rows, and modals all show the liquid-glass
+  refraction layer over the existing glass CSS; on Safari/Firefox surfaces
+  still frost/tint/edge-light (no live-DOM bend); the injected layers cause no
+  layout shift and focus order stays intact. (FR-043, NFR-008)
 
 ## MVP definition (agreed)
 
 **MVP = all currently implemented features, monetization free-first.**
 
-MVP is done when every FR-001–FR-042 passes with:
+MVP is done when every FR-001–FR-043 passes with:
 
 1. PayPal **sandbox or unconfigured** (paid buttons degrade gracefully to
    "not configured"); live payments are Phase 2.

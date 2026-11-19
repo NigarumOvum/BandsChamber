@@ -23,6 +23,8 @@ import {
   Square,
   Timer,
   Trash2,
+  Undo2,
+  Redo2,
   Volume2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -30,6 +32,7 @@ import { toast } from "sonner";
 import { useAudio } from "@/components/music/audio-provider";
 import { useProductionSong } from "@/components/music/production-song-context";
 import { FileUploadButton } from "@/components/music/file-upload-button";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import { createPartiture, deletePartiture, downloadBlob, fetchPartitures, updatePartiture } from "@/lib/music/client";
 import { readStoredRaw, useCurrentUserId, userKey, writeStored } from "@/lib/persist";
 import type { MusicPartitureRecord } from "@/lib/music/types";
@@ -69,6 +72,17 @@ type GridRow = {
 
 type FretboardComposition = {
   version: 1 | 2;
+  instrument: InstrumentType;
+  tuningId: string;
+  bpm: number;
+  timeSignature: TimeSignature;
+  noteDivision: NoteDivision;
+  noteLength: number;
+  columnCount: number;
+  grid: GridRow[];
+};
+
+type TabHistorySnapshot = {
   instrument: InstrumentType;
   tuningId: string;
   bpm: number;
@@ -355,8 +369,77 @@ export function TabStudioClient() {
   const strings = useMemo(() => stringsFromTuning(activeTuning), [activeTuning]);
 
   const [grid, setGrid] = useState<GridRow[]>(() => buildEmptyGrid(stringsFromTuning(GUITAR_TUNINGS[0]), 16));
+  const historyReadyRef = useRef(false);
+  const skipHistoryRef = useRef(false);
+  const previousHistorySnapshotRef = useRef<TabHistorySnapshot | null>(null);
+  const undoHistoryRef = useRef<TabHistorySnapshot[]>([]);
+  const redoHistoryRef = useRef<TabHistorySnapshot[]>([]);
+  const [historyAvailability, setHistoryAvailability] = useState({ key: draftKey, canUndo: false, canRedo: false });
   const measureSteps = stepsPerBar(timeSignature, noteDivision);
   const beatSteps = stepsPerBeat(timeSignature, noteDivision);
+  const historySnapshot = useMemo<TabHistorySnapshot>(() => ({
+    instrument,
+    tuningId,
+    bpm,
+    timeSignature,
+    noteDivision,
+    noteLength,
+    columnCount,
+    grid,
+  }), [instrument, tuningId, bpm, timeSignature, noteDivision, noteLength, columnCount, grid]);
+
+  const syncHistoryAvailability = useCallback(() => {
+    setHistoryAvailability({
+      key: draftKey,
+      canUndo: undoHistoryRef.current.length > 0,
+      canRedo: redoHistoryRef.current.length > 0,
+    });
+  }, [draftKey]);
+
+  const applyHistorySnapshot = useCallback((snapshot: TabHistorySnapshot) => {
+    setInstrument(snapshot.instrument);
+    setTuningId(snapshot.tuningId);
+    setBpm(snapshot.bpm);
+    setTimeSignature(snapshot.timeSignature);
+    setNoteDivision(snapshot.noteDivision);
+    setNoteLength(snapshot.noteLength);
+    setColumnCount(snapshot.columnCount);
+    setGrid(snapshot.grid);
+  }, []);
+
+  const undoComposition = useCallback(() => {
+    const previous = undoHistoryRef.current.pop();
+    if (!previous) return;
+    redoHistoryRef.current.push(historySnapshot);
+    skipHistoryRef.current = true;
+    previousHistorySnapshotRef.current = historySnapshot;
+    applyHistorySnapshot(previous);
+    syncHistoryAvailability();
+  }, [applyHistorySnapshot, historySnapshot, syncHistoryAvailability]);
+
+  const redoComposition = useCallback(() => {
+    const next = redoHistoryRef.current.pop();
+    if (!next) return;
+    undoHistoryRef.current.push(historySnapshot);
+    skipHistoryRef.current = true;
+    previousHistorySnapshotRef.current = historySnapshot;
+    applyHistorySnapshot(next);
+    syncHistoryAvailability();
+  }, [applyHistorySnapshot, historySnapshot, syncHistoryAvailability]);
+
+  const handleHistoryShortcut = useCallback((event: KeyboardEvent) => {
+    if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "z") return;
+    const target = event.target as HTMLElement | null;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+    event.preventDefault();
+    if (event.shiftKey) redoComposition();
+    else undoComposition();
+  }, [redoComposition, undoComposition]);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleHistoryShortcut);
+    return () => window.removeEventListener("keydown", handleHistoryShortcut);
+  }, [handleHistoryShortcut]);
 
   function changeInstrument(nextInstrument: InstrumentType) {
     const nextOptions = nextInstrument === "Bass" ? BASS_TUNINGS : GUITAR_TUNINGS;
@@ -611,6 +694,7 @@ export function TabStudioClient() {
         : 16;
 
       // Local recovery is silent so opening the studio does not interrupt editing.
+      skipHistoryRef.current = true;
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setInstrument(restoredInstrument);
       setTuningId(tuning.id);
@@ -628,6 +712,37 @@ export function TabStudioClient() {
       toast.error("Could not restore the local tab draft");
     }
   }, [draftKey]);
+
+  useEffect(() => {
+    historyReadyRef.current = false;
+    previousHistorySnapshotRef.current = null;
+    undoHistoryRef.current = [];
+    redoHistoryRef.current = [];
+  }, [draftKey]);
+
+  useEffect(() => {
+    const previous = previousHistorySnapshotRef.current;
+    if (!historyReadyRef.current) {
+      previousHistorySnapshotRef.current = historySnapshot;
+      historyReadyRef.current = true;
+      return;
+    }
+
+    if (skipHistoryRef.current) {
+      if (previous && JSON.stringify(previous) === JSON.stringify(historySnapshot)) return;
+      skipHistoryRef.current = false;
+      previousHistorySnapshotRef.current = historySnapshot;
+      return;
+    }
+
+    if (!previous) return;
+    if (previous === historySnapshot) return;
+    undoHistoryRef.current.push(previous);
+    if (undoHistoryRef.current.length > 100) undoHistoryRef.current.shift();
+    redoHistoryRef.current = [];
+    previousHistorySnapshotRef.current = historySnapshot;
+    syncHistoryAvailability();
+  }, [historySnapshot, syncHistoryAvailability]);
 
   // Keep a quiet local recovery copy without interrupting the workspace.
   useEffect(() => {
@@ -1028,7 +1143,7 @@ export function TabStudioClient() {
   return (
     <div className="space-y-4 animate-fade-up">
       {/* Top Header & Playback Panel */}
-      <div className="panel glass-shine flex flex-wrap items-center justify-between gap-4 rounded-[1.75rem] p-4">
+      <GlassSurface className="panel glass-shine flex flex-wrap items-center justify-between gap-4 rounded-[1.75rem] p-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5">
             <button
@@ -1066,6 +1181,26 @@ export function TabStudioClient() {
               title="Jump forward one beat"
             >
               <FastForward className="h-4 w-4" />
+            </button>
+            <button
+              onClick={undoComposition}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-zinc-900/60 text-[var(--color-sand-1)] transition hover:border-[var(--color-mint)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              type="button"
+              disabled={historyAvailability.key !== draftKey || !historyAvailability.canUndo}
+              aria-label="Undo composition edit"
+              title="Undo (Cmd/Ctrl+Z)"
+            >
+              <Undo2 className="h-4 w-4" />
+            </button>
+            <button
+              onClick={redoComposition}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-zinc-900/60 text-[var(--color-sand-1)] transition hover:border-[var(--color-mint)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              type="button"
+              disabled={historyAvailability.key !== draftKey || !historyAvailability.canRedo}
+              aria-label="Redo composition edit"
+              title="Redo (Cmd/Ctrl+Shift+Z)"
+            >
+              <Redo2 className="h-4 w-4" />
             </button>
           </div>
 
@@ -1240,11 +1375,11 @@ export function TabStudioClient() {
             Export
           </button>
         </div>
-      </div>
+      </GlassSurface>
 
       {/* Multi-Track MIDI Separated Channels Toolbar (Shows if multi-track MIDI is loaded) */}
       {multiTracks.length > 0 && (
-        <div className="panel glass-shine flex flex-wrap items-center gap-2 rounded-[1.25rem] border border-[var(--color-mint)]/30 bg-black/30 p-3">
+        <GlassSurface className="panel glass-shine flex flex-wrap items-center gap-2 rounded-[1.25rem] border border-[var(--color-mint)]/30 bg-black/30 p-3">
           <div className="flex items-center gap-1.5 text-xs font-black text-[var(--color-mint)]">
             <Layers className="h-4 w-4" />
             <span>Separated MIDI Tracks ({multiTracks.length}):</span>
@@ -1265,12 +1400,13 @@ export function TabStudioClient() {
               </button>
             ))}
           </div>
-        </div>
+        </GlassSurface>
       )}
 
       {/* Fretboard Grid & Sidebars */}
       <aside className="grid gap-4">
-        <section className="panel glass-shine rounded-[1.75rem] p-4">
+        <section>
+          <GlassSurface className="panel glass-shine rounded-[1.75rem] p-4">
           <div className="flex items-center justify-between">
             <div className="eyebrow">Tab Preview</div>
             <button
@@ -1372,11 +1508,12 @@ export function TabStudioClient() {
               ))}
             </div>
           )}
+          </GlassSurface>
         </section>
       </aside>
 
       <div className="w-full">
-        <div className="panel glass-shine overflow-hidden rounded-[1.75rem] p-5">
+        <GlassSurface className="panel glass-shine overflow-hidden rounded-[1.75rem] p-5">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <div className="eyebrow">Interactive Fretboard Grid</div>
@@ -1559,7 +1696,7 @@ export function TabStudioClient() {
               </AnimatePresence>
             </div>
           </div>
-        </div>
+        </GlassSurface>
 
       </div>
     </div>

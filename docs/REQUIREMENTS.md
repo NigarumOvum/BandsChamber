@@ -122,6 +122,13 @@
   stays namespaced across users on one browser.
 - FR-040 Footer always shows tagline, PayPal note, Studio/Account links,
   © year, and Go Pro CTA.
+- FR-043 Every content surface (navbar, footer, page panels, dashboard and
+  collapsible cards, sidebars, form fields, list/table rows, and modals) renders
+  a liquid-glass refraction layer via the shared `<GlassSurface>` primitive
+  (`@samasante/liquid-glass`), layered on top of the existing CSS glassmorphism
+  classes (`.panel`, `.glass-pill`, `.glass-card-soft`, `.glass-shine`), which
+  remain the base in every browser. Live-DOM refraction is Chrome/Edge-only;
+  Safari/Firefox still frost, tint, and edge-light.
 
 ## Non-functional requirements
 
@@ -146,3 +153,9 @@
 - NFR-007 **Maintainability**: schema auto-migrate (`CREATE TABLE IF NOT
   EXISTS` + `ensureColumn`); typed domain libs; Vitest on pure libs.
   Gaps: no e2e, no API/DB tests, gating duplicated per route (no middleware).
+- NFR-008 **Progressive enhancement (liquid glass)**: the refraction layer is
+  additive — the CSS glass classes provide the tint/rim/frost fallback in all
+  browsers and never depend on the JS layer; the layers `<Glass>` injects are
+  pinned out of flow (`[data-lg-layer]`) so they cause no layout shift; wrapping
+  is applied to containers, not to native controls, to protect focus order and
+  keyboard semantics.

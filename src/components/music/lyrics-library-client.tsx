@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { useProductionSong } from "@/components/music/production-song-context";
 import { readStoredRaw, removeStored, useCurrentUserId, userKey, writeStored } from "@/lib/persist";
 import { StudioSidebar } from "@/components/music/studio-sidebar";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import {
   createSong,
   deleteSong,
@@ -399,7 +400,7 @@ export function LyricsLibraryClient({ showLibrary = true }: { showLibrary?: bool
 
       <section className={showLibrary ? "space-y-6" : "min-w-0 space-y-6"}>
         {lyricsDraftAvailable && selectedSong ? (
-          <div className="panel flex flex-wrap items-center justify-between gap-2 rounded-[1.25rem] border border-[var(--color-brass)]/30 bg-[var(--color-brass)]/5 p-3">
+          <GlassSurface className="panel flex flex-wrap items-center justify-between gap-2 rounded-[1.25rem] border border-[var(--color-brass)]/30 bg-[var(--color-brass)]/5 p-3">
             <p className="text-xs text-[var(--color-sand-1)]">
               Unsaved lyrics were autosaved locally. Restore the draft or discard it.
             </p>
@@ -419,15 +420,15 @@ export function LyricsLibraryClient({ showLibrary = true }: { showLibrary?: bool
                 Discard
               </button>
             </div>
-          </div>
+          </GlassSurface>
         ) : null}
         {loading ? (
-          <div className="panel flex min-h-[320px] items-center justify-center rounded-[1.75rem] p-6">
+          <GlassSurface className="panel flex min-h-[320px] items-center justify-center rounded-[1.75rem] p-6">
             <Spinner color="danger" />
-          </div>
+          </GlassSurface>
         ) : selectedSong ? (
           <>
-            <div className="panel rounded-[2rem] border border-white/5 bg-zinc-900/10 p-6">
+            <GlassSurface className="panel rounded-[2rem] border border-white/5 bg-zinc-900/10 p-6">
               <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <Book className="h-5 w-5 text-[var(--color-brass)]" />
@@ -510,14 +511,14 @@ export function LyricsLibraryClient({ showLibrary = true }: { showLibrary?: bool
                   />
                 </label>
               </div>
-            </div>
+            </GlassSurface>
 
             {/* Song sections moved to Song Studio - Sections tab */}
           </>
         ) : (
-          <div className="panel rounded-[1.75rem] p-6 text-sm text-[var(--color-sand-2)]">
+          <GlassSurface className="panel rounded-[1.75rem] p-6 text-sm text-[var(--color-sand-2)]">
             No songs selected. Create one in the Song tab.
-          </div>
+          </GlassSurface>
         )}
       </section>
 

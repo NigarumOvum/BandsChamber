@@ -6,10 +6,13 @@ import { redirect } from "next/navigation";
 
 import { AppNavLinks, type AppNavIconId } from "@/components/app-nav-links";
 import { AppFooter } from "@/components/app-footer";
+import { GlobalSearchDialog } from "@/components/global-search-dialog";
 import { HeaderAccountLink } from "@/components/header-bits";
 import { LanguageSwitcher } from "@/components/language-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PWAInstallButton } from "@/components/pwa/pwa-install-button";
+import { GlassSurface } from "@/components/ui/glass-surface";
+import { SkipLink } from "@/components/skip-link";
 import { ensureUserCanAccessPage, requireCurrentUser } from "@/lib/auth";
 import type { ManagedPageKey } from "@/lib/access";
 import { canAccessProductionStudio } from "@/lib/hub-access";
@@ -83,9 +86,11 @@ export async function AppShell({
 
   return (
     <div className="grain min-h-screen flex flex-col">
+      <SkipLink />
       {/* ── Sticky top navbar ─────────────────────────────────── */}
-      <header className="panel glass-shine sticky top-0 z-20 w-full animate-fade-up border-b border-[var(--color-border)]/50 px-3 sm:px-5 lg:px-6">
-        <div className="mx-auto flex h-12 w-full max-w-7xl items-center gap-3">
+      <header className="sticky top-0 z-20 w-full animate-fade-up">
+        <GlassSurface className="panel glass-shine w-full border-b border-[var(--color-border)]/50 px-3 sm:px-5 lg:px-6">
+          <div className="mx-auto flex min-h-12 w-full max-w-7xl flex-wrap items-center gap-2 py-1 sm:h-12 sm:flex-nowrap sm:gap-3 sm:py-0">
 
           {/* Logo */}
           <Link href="/" className="flex shrink-0 items-center gap-2.5 min-w-0">
@@ -109,7 +114,7 @@ export async function AppShell({
           <div className="hidden h-5 w-px shrink-0 bg-[var(--color-border)] sm:block" />
 
           {/* Nav links: toolkit first (harmony, progressions), then app (Production Studio, Prompt Library) */}
-          <nav className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <nav className="order-3 w-full min-w-0 flex-none overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:order-none sm:flex-1">
             <div className="flex items-center gap-1.5 px-0.5">
               {toolkitLinks}
               <AppNavLinks items={navLinks} />
@@ -117,21 +122,27 @@ export async function AppShell({
           </nav>
 
           {/* Right controls — compact icon cluster */}
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <GlobalSearchDialog />
             <PWAInstallButton />
             <LanguageSwitcher />
             <HeaderAccountLink name={user.name || user.email} />
             <ThemeToggle />
           </div>
-        </div>
+          </div>
+        </GlassSurface>
       </header>
 
       {/* ── Page content ──────────────────────────────────────── */}
       <div className="flex flex-1 flex-col px-3 py-4 sm:px-5 lg:px-6">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
 
-          <main className={aside ? "page-grid" : "space-y-4"}>
-            {aside ? <aside className="panel rounded-[1.25rem] p-3">{aside}</aside> : null}
+          <main id="main-content" tabIndex={-1} className={aside ? "page-grid" : "space-y-4"}>
+            {aside ? (
+              <aside>
+                <GlassSurface className="panel rounded-[1.25rem] p-3">{aside}</GlassSurface>
+              </aside>
+            ) : null}
             <section className="space-y-4">
               {/* Title row — eyebrow + h1 + optional fullscreen button */}
               <div className="flex items-center justify-between gap-3 px-2 sm:px-4">

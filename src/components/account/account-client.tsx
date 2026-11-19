@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { LogoutButton } from "@/components/auth/logout-button";
 import { useI18n } from "@/components/language-provider";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import { HUB_ACCESS_GROUPS, MANAGEABLE_PAGES, type ManagedPageKey } from "@/lib/access";
 
 type PageDefinition = {
@@ -309,32 +310,32 @@ export function AccountClient({ currentUser, deniedPage, emailChangeToken, pageA
                 Your account does not currently have access to <span className="font-semibold">{deniedPage}</span>. Ask the admin to enable that page from Access Control.
               </div>
             ) : null}
-            <div className="panel rounded-[1.5rem] p-5">
+            <GlassSurface className="panel rounded-[1.5rem] p-5">
               <div className="eyebrow">{t("account.email")}</div>
               <p className="mt-3 text-lg font-semibold text-[var(--color-foreground)]">{currentUser.email}</p>
-            </div>
-            <div className="panel rounded-[1.5rem] p-5">
+            </GlassSurface>
+            <GlassSurface className="panel rounded-[1.5rem] p-5">
               <div className="eyebrow">{t("account.name")}</div>
               <p className="mt-3 text-lg font-semibold text-[var(--color-foreground)]">{currentUser.name || "Not set"}</p>
-            </div>
-            <div className="panel rounded-[1.5rem] p-5">
+            </GlassSurface>
+            <GlassSurface className="panel rounded-[1.5rem] p-5">
               <div className="eyebrow">{t("account.verification")}</div>
               <p className="mt-3 text-lg font-semibold text-[var(--color-foreground)]">{currentUser.emailVerifiedAt ? t("account.verified") : t("account.pending")}</p>
-            </div>
-            <div className="panel rounded-[1.5rem] p-5">
+            </GlassSurface>
+            <GlassSurface className="panel rounded-[1.5rem] p-5">
               <div className="eyebrow">{t("account.role")}</div>
               <p className="mt-3 text-lg font-semibold text-[var(--color-foreground)]">{currentUser.isAdmin ? t("account.admin") : t("account.member")}</p>
-            </div>
-            <div className="panel rounded-[1.5rem] p-5 flex items-center justify-between">
+            </GlassSurface>
+            <GlassSurface className="panel rounded-[1.5rem] p-5 flex items-center justify-between">
               <div>
                 <div className="eyebrow">{t("account.session")}</div>
                 <p className="mt-3 text-sm text-[var(--color-sand-2)]">{t("account.logoutHint")}</p>
               </div>
               <LogoutButton />
-            </div>
+            </GlassSurface>
           </div>
 
-          <div className="panel rounded-[1.5rem] p-5">
+          <GlassSurface className="panel rounded-[1.5rem] p-5">
             <div className="eyebrow">{t("account.security")}</div>
             <p className="mt-2 text-sm text-[var(--color-sand-2)]">{t("account.securityHint")}</p>
             <div className="mt-4 grid gap-6 md:grid-cols-2">
@@ -417,15 +418,15 @@ export function AccountClient({ currentUser, deniedPage, emailChangeToken, pageA
                 </button>
               </form>
             </div>
-          </div>
+            </GlassSurface>
 
-          {!currentUser.isAdmin ? (
-            <div className="panel rounded-[1.5rem] p-5">
+            {!currentUser.isAdmin ? (
+            <GlassSurface className="panel rounded-[1.5rem] p-5">
               <div className="eyebrow">{t("account.yourAccess")}</div>
               <p className="mt-2 text-sm text-[var(--color-sand-2)]">{t("account.accessHint")}</p>
               <div className="mt-4 grid gap-3 md:grid-cols-3">
                 {ownHubSummary.map((hub) => (
-                  <div
+                  <GlassSurface
                     key={hub.id}
                     className={`rounded-[1.25rem] border p-4 ${hub.hasAccess ? "surface-success text-[var(--color-foreground)]" : "glass-card-soft text-[var(--color-sand-2)]"}`}
                   >
@@ -433,23 +434,23 @@ export function AccountClient({ currentUser, deniedPage, emailChangeToken, pageA
                     <div className="mt-2 text-sm font-semibold">
                       {hub.hasAccess ? `${hub.enabledCount}/${hub.totalCount} pages enabled` : "No access"}
                     </div>
-                  </div>
+                  </GlassSurface>
                 ))}
               </div>
-            </div>
+            </GlassSurface>
           ) : null}
         </section>
       ) : null}
 
       {activeTab === "access" && currentUser.isAdmin ? (
         <section className="space-y-4">
-          <div className="glass-card-soft rounded-[1.5rem] p-5 text-sm text-[var(--color-sand-2)]">
+          <GlassSurface className="glass-card-soft rounded-[1.5rem] p-5 text-sm text-[var(--color-sand-2)]">
             Admin access is fixed. Manage registered users below: edit display names, review hub access, and toggle individual pages. Passwords are never shown or editable here.
-          </div>
+          </GlassSurface>
           {loading ? (
-            <div className="glass-card-soft rounded-[1.5rem] p-5 text-[var(--color-sand-2)]">Loading access settings...</div>
+            <GlassSurface className="glass-card-soft rounded-[1.5rem] p-5 text-[var(--color-sand-2)]">Loading access settings...</GlassSurface>
           ) : users.length === 0 ? (
-            <div className="glass-card-soft rounded-[1.5rem] p-5 text-[var(--color-sand-2)]">No registered users yet.</div>
+            <GlassSurface className="glass-card-soft rounded-[1.5rem] p-5 text-[var(--color-sand-2)]">No registered users yet.</GlassSurface>
           ) : (
             users.map((user) => {
               const hubSummary = getHubAccessSummary(user.pageAccess);
@@ -458,7 +459,7 @@ export function AccountClient({ currentUser, deniedPage, emailChangeToken, pageA
               const isSavingName = savingKey === `${user.id}:name`;
 
               return (
-                <div key={user.id} className="panel rounded-[1.5rem] p-5">
+                <GlassSurface key={user.id} className="panel rounded-[1.5rem] p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--color-border)] pb-4">
                     <div className="min-w-0 flex-1 space-y-2">
                       {isEditingName && !user.isAdmin ? (
@@ -532,7 +533,7 @@ export function AccountClient({ currentUser, deniedPage, emailChangeToken, pageA
 
                   <div className="mt-4 grid gap-3 md:grid-cols-3">
                     {hubSummary.map((hub) => (
-                      <div
+                      <GlassSurface
                         key={hub.id}
                         className={`rounded-[1.25rem] border p-4 ${hub.hasAccess ? "surface-success text-[var(--color-foreground)]" : "glass-card-soft text-[var(--color-sand-2)]"}`}
                       >
@@ -540,7 +541,7 @@ export function AccountClient({ currentUser, deniedPage, emailChangeToken, pageA
                         <div className="mt-2 text-sm font-semibold">
                           {user.isAdmin ? "Full hub access" : hub.hasAccess ? `${hub.enabledCount}/${hub.totalCount} pages` : "Blocked"}
                         </div>
-                      </div>
+                      </GlassSurface>
                     ))}
                   </div>
 
@@ -563,7 +564,7 @@ export function AccountClient({ currentUser, deniedPage, emailChangeToken, pageA
                       );
                     })}
                   </div>
-                </div>
+                </GlassSurface>
               );
             })
           )}

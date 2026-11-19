@@ -3,23 +3,26 @@
 import { Moon, Sun } from "lucide-react";
 
 import { useTheme } from "@/components/theme-provider";
+import { GlassControl } from "@/components/ui/glass-surface";
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      className="glass-pill inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:-translate-y-0.5"
-      aria-label="Toggle theme"
-      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-    >
-      {theme === "dark" ? (
-        <Sun className="h-3.5 w-3.5 text-[var(--color-brass)]" />
-      ) : (
-        <Moon className="h-3.5 w-3.5 text-[var(--color-sand-2)]" />
-      )}
-    </button>
+    <GlassControl>
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="glass-pill inline-flex h-8 w-8 items-center justify-center rounded-full transition hover:-translate-y-0.5"
+        aria-label="Toggle theme"
+        title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      >
+        {theme === "dark" ? (
+          <Sun className="h-3.5 w-3.5 text-[var(--color-brass)]" />
+        ) : (
+          <Moon className="h-3.5 w-3.5 text-[var(--color-sand-2)]" />
+        )}
+      </button>
+    </GlassControl>
   );
 }

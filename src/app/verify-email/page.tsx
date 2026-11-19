@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { VerifyEmailClient } from "@/components/auth/verify-email-client";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import { getCurrentUser } from "@/lib/auth";
 
 type VerifyEmailPageProps = {
@@ -22,12 +23,12 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
         {token ? (
           <VerifyEmailClient token={token} />
         ) : (
-          <div className="panel w-full space-y-4 rounded-[2.25rem] p-8 text-[var(--color-sand-2)] lg:p-10">
+          <GlassSurface className="panel w-full space-y-4 rounded-[2.25rem] p-8 text-[var(--color-sand-2)] lg:p-10">
             <div className="eyebrow">Account verification</div>
             <h1 className="text-3xl font-black tracking-tight text-[var(--color-foreground)]">Email confirmation failed</h1>
             <p>The confirmation link is missing or invalid. Request another confirmation email from the login screen.</p>
             <Link href="/login" className="text-[var(--color-brass)] transition hover:text-[var(--color-foreground)]">Go to login</Link>
-          </div>
+          </GlassSurface>
         )}
       </div>
     </div>

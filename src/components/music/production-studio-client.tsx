@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Music,
@@ -48,6 +48,7 @@ import {
   ProductionSongProvider,
   useProductionSong,
 } from "@/components/music/production-song-context";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import {
   fetchSongs,
   fetchProjects,
@@ -62,6 +63,8 @@ import { useCurrentUserId, usePersistentState } from "@/lib/persist";
 type ProductionStudioClientProps = {
   allowedTabs: Array<{ id: string; label: string }>;
   initialTab: string;
+  initialSongId?: string;
+  initialProjectId?: string;
 };
 
 const GENRE_PRESETS = ["Rock", "Metal", "Pop", "Electronic", "Jazz", "Hip Hop", "Acoustic", "Indie", "Classical"];
@@ -185,7 +188,12 @@ const SONG_TEMPLATES = [
   }
 ];
 
-function ProductionStudioDashboard({ allowedTabs, initialTab }: ProductionStudioClientProps) {
+function ProductionStudioDashboard({
+  allowedTabs,
+  initialTab,
+  initialSongId,
+  initialProjectId,
+}: ProductionStudioClientProps) {
   const { setSelectedSongId, refreshSongs } = useProductionSong();
   const userId = useCurrentUserId();
   const [songs, setSongs] = useState<MusicSongSummary[]>([]);
@@ -252,6 +260,7 @@ function ProductionStudioDashboard({ allowedTabs, initialTab }: ProductionStudio
 
   // Drag and drop state
   const [draggedSong, setDraggedSong] = useState<string | null>(null);
+  const initialSearchTargetHandledRef = useRef(false);
 
   // Layout state
   const [viewMode, setViewMode] = usePersistentState<"grid" | "kanban" | "compact">("production_studio_view_mode", "grid", { userId });
@@ -266,6 +275,7 @@ function ProductionStudioDashboard({ allowedTabs, initialTab }: ProductionStudio
   // Keyboard shortcuts for command palette
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setShowCommandPalette(true);
@@ -507,6 +517,17 @@ function ProductionStudioDashboard({ allowedTabs, initialTab }: ProductionStudio
       ]);
       setSongs(songsRes.songs || []);
       setProjects(projectsRes.projects || []);
+      if (!initialSearchTargetHandledRef.current && (initialSongId || initialProjectId)) {
+        initialSearchTargetHandledRef.current = true;
+        const selectedProject = projectsRes.projects?.find((project) => project.id === initialProjectId);
+        if (selectedProject) setSelectedProjectSlug(selectedProject.slug);
+        const selectedSong = songsRes.songs?.find((song) => song.id === initialSongId);
+        if (selectedSong) {
+          setSelectedSongId(selectedSong.id);
+          setStudioInitialTab(initialTab);
+          setIsStudioModalOpen(true);
+        }
+      }
     } catch (err) {
       toast.error((err as Error).message || "Failed to load songs and bands");
     } finally {
@@ -1292,7 +1313,7 @@ function ProductionStudioDashboard({ allowedTabs, initialTab }: ProductionStudio
           <p className="text-xs text-[var(--color-sand-2)]">Loading song catalog...</p>
         </div>
       ) : filteredSongs.length === 0 ? (
-        <div className="panel flex min-h-[260px] flex-col items-center justify-center gap-3 rounded-[1.75rem] p-8 text-center">
+        <GlassSurface className="panel flex min-h-[260px] flex-col items-center justify-center gap-3 rounded-[1.75rem] p-8 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-brass)]">
             <Music2 className="h-6 w-6" />
           </div>
@@ -1309,7 +1330,7 @@ function ProductionStudioDashboard({ allowedTabs, initialTab }: ProductionStudio
           >
             <Plus className="h-4 w-4" /> Create First Song
           </button>
-        </div>
+        </GlassSurface>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredSongs.map((song, index) => {
@@ -2570,7 +2591,7 @@ function ProductionStudioDashboard({ allowedTabs, initialTab }: ProductionStudio
 
 export function ProductionStudioClient(props: ProductionStudioClientProps) {
   return (
-    <ProductionSongProvider>
+    <ProductionSongProvider initialSongId={props.initialSongId}>
       <ProductionStudioDashboard {...props} />
     </ProductionSongProvider>
   );

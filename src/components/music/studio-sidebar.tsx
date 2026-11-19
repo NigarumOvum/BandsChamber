@@ -4,6 +4,7 @@ import { Fragment, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import { Button, Chip } from "@heroui/react";
 import { useI18n } from "@/components/language-provider";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import type { MusicProjectRecord, MusicSongSummary } from "@/lib/music/types";
 import { useCurrentUserId, usePersistentState } from "@/lib/persist";
 
@@ -95,7 +96,8 @@ export function StudioSidebar({
 
   if (collapsed) {
     return (
-      <aside className="panel glass-shine flex w-16 flex-col items-center rounded-[1.75rem] p-4">
+      <aside>
+        <GlassSurface className="panel glass-shine flex w-16 flex-col items-center rounded-[1.75rem] p-4">
         <button
           type="button"
           onClick={() => setCollapsed(false)}
@@ -142,12 +144,14 @@ export function StudioSidebar({
             </button>
           ))}
         </div>
+        </GlassSurface>
       </aside>
     );
   }
 
   return (
-    <aside className="panel glass-shine rounded-[1.75rem] p-4">
+    <aside>
+      <GlassSurface className="panel glass-shine rounded-[1.75rem] p-4">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -322,6 +326,7 @@ export function StudioSidebar({
           ) : null}
         </div>
       </div>
+      </GlassSurface>
     </aside>
   );
 }
