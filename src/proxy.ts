@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
-import { SESSION_COOKIE_NAME } from "@/lib/auth-constants";
+import { getSessionCookie } from "better-auth/cookies";
 
 const AUTH_PAGES = new Set(["/login", "/register", "/forgot-password", "/reset-password", "/verify-email"]);
 const PUBLIC_PREFIXES = ["/_next", "/favicon.ico"];
@@ -20,16 +19,14 @@ function isPublicPath(pathname: string) {
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (isPublicPath(pathname)) {
-    const hasSession = Boolean(request.cookies.get(SESSION_COOKIE_NAME)?.value);
-    if (hasSession && AUTH_PAGES.has(pathname)) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
+  // Signed Better Auth session cookie — no DB round-trip in the edge proxy.
+  const hasSession = Boolean(getSessionCookie(request));
 
+  if (isPublicPath(pathname)) {
+    // Auth pages decide for themselves (they run a real session lookup), so a
+    // stale or revoked cookie can't bounce visitors between "/" and "/login".
     return NextResponse.next();
   }
-
-  const hasSession = Boolean(request.cookies.get(SESSION_COOKIE_NAME)?.value);
 
   if (!hasSession && pathname.startsWith("/api/music")) {
     return NextResponse.json({ error: "Unauthorized", details: null }, { status: 401 });

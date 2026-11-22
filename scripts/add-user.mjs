@@ -1,5 +1,5 @@
 import { createClient } from "@libsql/client";
-import { randomBytes, scryptSync } from "node:crypto";
+import { randomBytes, randomUUID, scryptSync } from "node:crypto";
 
 function readEnv(name) {
   const value = process.env[name]?.trim();
@@ -45,7 +45,7 @@ function printHelp() {
   console.log(`
 Usage: node scripts/add-user.mjs [options]
 
-Creates a user directly in the auth database (app_user).
+Creates a user directly in the Better Auth tables (user + account).
 
 Options:
   --email <email>      Required. Email of the user to create.
@@ -74,23 +74,39 @@ function isoNow() {
   return new Date().toISOString();
 }
 
-async function ensureAuthTables(db) {
+async function ensureSchema(db) {
   await db.execute(`
-    CREATE TABLE IF NOT EXISTS app_user (
+    CREATE TABLE IF NOT EXISTS user (
       id text PRIMARY KEY NOT NULL,
+      name text NOT NULL,
       email text NOT NULL,
-      name text,
-      email_verified_at text,
-      is_admin integer NOT NULL DEFAULT 0,
-      password_hash text NOT NULL,
-      created_at text NOT NULL,
-      updated_at text NOT NULL
+      emailVerified integer NOT NULL DEFAULT 0,
+      emailVerifiedAt text,
+      image text,
+      isAdmin integer NOT NULL DEFAULT 0,
+      createdAt text NOT NULL,
+      updatedAt text NOT NULL
     )
   `);
+  await db.execute(`CREATE UNIQUE INDEX IF NOT EXISTS user_email_idx ON user (email)`);
   await db.execute(`
-    CREATE UNIQUE INDEX IF NOT EXISTS app_user_email_idx
-    ON app_user (email)
+    CREATE TABLE IF NOT EXISTS account (
+      id text PRIMARY KEY NOT NULL,
+      accountId text NOT NULL,
+      providerId text NOT NULL,
+      userId text NOT NULL,
+      accessToken text,
+      refreshToken text,
+      idToken text,
+      accessTokenExpiresAt text,
+      refreshTokenExpiresAt text,
+      scope text,
+      password text,
+      createdAt text NOT NULL,
+      updatedAt text NOT NULL
+    )
   `);
+  await db.execute(`CREATE UNIQUE INDEX IF NOT EXISTS account_provider_account_idx ON account (providerId, accountId)`);
 }
 
 async function main() {
@@ -115,10 +131,10 @@ async function main() {
     authToken: readEnv("MUSIC_TURSO_AUTH_TOKEN"),
   });
 
-  await ensureAuthTables(db);
+  await ensureSchema(db);
 
   const existing = await db.execute({
-    sql: "select id from app_user where email = ? limit 1",
+    sql: "select id from user where email = ? limit 1",
     args: [email],
   });
   if (existing.rows[0]) {
@@ -126,39 +142,29 @@ async function main() {
   }
 
   const now = isoNow();
-  const user = {
-    id: randomBytes(16).toString("hex"),
-    email,
-    name: options.name || null,
-    email_verified_at: now,
-    is_admin: options.admin ? 1 : 0,
-    password_hash: hashPassword(password),
-    created_at: now,
-    updated_at: now,
-  };
+  const userId = randomUUID();
+  const name = options.name || email.split("@")[0] || email;
 
   await db.execute({
     sql: `
-      insert into app_user (id, email, name, email_verified_at, is_admin, password_hash, created_at, updated_at)
-      values (?, ?, ?, ?, ?, ?, ?, ?)
+      insert into user (id, name, email, emailVerified, emailVerifiedAt, image, isAdmin, createdAt, updatedAt)
+      values (?, ?, ?, 1, ?, null, ?, ?, ?)
     `,
-    args: [
-      user.id,
-      user.email,
-      user.name,
-      user.email_verified_at,
-      user.is_admin,
-      user.password_hash,
-      user.created_at,
-      user.updated_at,
-    ],
+    args: [userId, name, email, now, options.admin ? 1 : 0, now, now],
+  });
+  await db.execute({
+    sql: `
+      insert into account (id, accountId, providerId, userId, password, createdAt, updatedAt)
+      values (?, ?, 'credential', ?, ?, ?, ?)
+    `,
+    args: [randomUUID(), userId, userId, hashPassword(password), now, now],
   });
 
   console.log("User created successfully:");
-  console.log(`  Email:    ${user.email}`);
+  console.log(`  Email:    ${email}`);
   console.log(`  Password: ${password}`);
-  console.log(`  Name:     ${user.name || "(none)"}`);
-  console.log(`  Admin:    ${user.is_admin === 1 ? "yes" : "no"}`);
+  console.log(`  Name:     ${name}`);
+  console.log(`  Admin:    ${options.admin ? "yes" : "no"}`);
   console.log(`  Email verified: yes (can log in immediately)`);
 }
 

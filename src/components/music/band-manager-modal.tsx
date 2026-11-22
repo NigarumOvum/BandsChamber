@@ -289,7 +289,7 @@ export function BandManagerModal({
             role="dialog"
             aria-modal="true"
             aria-labelledby="band-modal-title"
-            className="relative z-10 flex max-h-[min(94dvh,56rem)] w-full max-w-xl flex-col overflow-hidden rounded-t-2xl border border-[var(--color-border)] bg-[var(--color-modal-surface)] shadow-2xl sm:rounded-2xl"
+            className="panel glass-shine relative z-10 flex max-h-[min(94dvh,56rem)] w-full max-w-xl flex-col overflow-hidden rounded-t-2xl border border-[var(--color-border)] shadow-2xl sm:rounded-2xl"
           >
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-stroke)] px-4 py-3.5 sm:px-5">
               <div className="flex min-w-0 items-center gap-3">

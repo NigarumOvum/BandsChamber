@@ -25,7 +25,8 @@ import {
   Trash2,
   Undo2,
   Redo2,
-  Volume2,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,7 +35,7 @@ import { useProductionSong } from "@/components/music/production-song-context";
 import { FileUploadButton } from "@/components/music/file-upload-button";
 import { GlassSurface } from "@/components/ui/glass-surface";
 import { createPartiture, deletePartiture, downloadBlob, fetchPartitures, updatePartiture } from "@/lib/music/client";
-import { readStoredRaw, useCurrentUserId, userKey, writeStored } from "@/lib/persist";
+import { readStoredRaw, useCurrentUserId, usePersistentState, userKey, writeStored } from "@/lib/persist";
 import type { MusicPartitureRecord } from "@/lib/music/types";
 import {
   NOTE_DIVISIONS,
@@ -349,6 +350,7 @@ export function TabStudioClient() {
   const [showPasteImport, setShowPasteImport] = useState(false);
   const [gridViewportWidth, setGridViewportWidth] = useState(0);
   const userId = useCurrentUserId();
+  const [zoom, setZoom] = usePersistentState<number>("tab_studio_zoom", 1, { userId });
   const draftKey = userId && selectedSongId
     ? userKey(userId, `tab_studio_draft:${selectedSongId}`)
     : TAB_DRAFT_KEY;
@@ -474,7 +476,31 @@ export function TabStudioClient() {
   );
   const gridStepCount = grid[0]?.cells.length ?? columnCount;
   const barCount = Math.ceil(gridStepCount / measureSteps);
-  const stepWidth = Math.max(34, Math.min(48, (gridViewportWidth - 64) / gridStepCount));
+  const baseStepWidth = Math.max(34, Math.min(48, (gridViewportWidth - 64) / gridStepCount));
+  const stepWidth = Math.max(20, Math.round(baseStepWidth * zoom));
+  const playheadPosition = playhead >= 0
+    ? {
+        bar: Math.floor(playhead / measureSteps) + 1,
+        beat: Math.floor((playhead % measureSteps) / beatSteps) + 1,
+        subdivision: (playhead % beatSteps) + 1,
+      }
+    : null;
+
+  // Keep the playhead in view while playing or when jumping with the keyboard.
+  useEffect(() => {
+    if (playhead < 0) return;
+    const viewport = gridViewportRef.current;
+    if (!viewport) return;
+    const playheadX = 64 + playhead * stepWidth;
+    const visibleStart = viewport.scrollLeft + 64;
+    const visibleEnd = viewport.scrollLeft + viewport.clientWidth - stepWidth;
+    if (playheadX < visibleStart || playheadX > visibleEnd) {
+      viewport.scrollTo({
+        left: Math.max(0, playheadX - viewport.clientWidth / 2),
+        behavior: "auto",
+      });
+    }
+  }, [playhead, stepWidth]);
 
   useEffect(() => {
     const viewport = gridViewportRef.current;
@@ -1524,7 +1550,39 @@ export function TabStudioClient() {
                 Add notes on a 1/{noteDivision} grid · {noteLength}% note gate · {strings.length} strings · 3h5 hammer-on · 5p3 pull-off · 7s9 slide · 5b7 bend · ~ vibrato · x dead note
               </p>
             </div>
-            <Volume2 className="h-4 w-4 text-[var(--color-brass)] opacity-70" />
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              {playheadPosition ? (
+                <span className="glass-pill px-2.5 py-1 font-mono text-[10px] font-bold tabular-nums text-[var(--color-mint)]">
+                  Bar {playheadPosition.bar} · Beat {playheadPosition.beat}
+                  <span className="text-[var(--color-sand-2)]"> · {playheadPosition.subdivision}/{noteDivision}</span>
+                </span>
+              ) : null}
+              <div className="glass-pill flex items-center gap-0.5 p-0.5" role="group" aria-label="Grid zoom">
+                <button
+                  type="button"
+                  onClick={() => setZoom((current) => Math.max(0.6, Math.round((current - 0.1) * 10) / 10))}
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-sand-2)] transition hover:text-[var(--color-foreground)] disabled:opacity-40"
+                  disabled={zoom <= 0.6}
+                  aria-label="Zoom out"
+                  title="Zoom out"
+                >
+                  <ZoomOut className="h-3.5 w-3.5" />
+                </button>
+                <span className="w-9 text-center font-mono text-[10px] font-bold tabular-nums text-[var(--color-foreground)]">
+                  {Math.round(zoom * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setZoom((current) => Math.min(2.5, Math.round((current + 0.1) * 10) / 10))}
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-sand-2)] transition hover:text-[var(--color-foreground)] disabled:opacity-40"
+                  disabled={zoom >= 2.5}
+                  aria-label="Zoom in"
+                  title="Zoom in"
+                >
+                  <ZoomIn className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="mb-3 flex flex-wrap items-center gap-2">

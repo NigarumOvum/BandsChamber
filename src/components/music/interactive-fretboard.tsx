@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { Volume2, Zap, Layers } from "lucide-react";
+import { Volume2, Layers } from "lucide-react";
 import { useAudio } from "@/components/music/audio-provider";
 import { GlassSurface } from "@/components/ui/glass-surface";
 import {
@@ -62,11 +62,20 @@ export function InteractiveFretboard({
   const { getAudioContext } = useAudio();
   const [activeString, setActiveString] = useState<number | null>(null);
   const [activeFret, setActiveFret] = useState<number | null>(null);
-  const [isHovering, setIsHovering] = useState(false);
+  const [hoverPlayEnabled, setHoverPlayEnabled] = useState(false);
+  const [hoveredCell, setHoveredCell] = useState<{ string: number; fret: number } | null>(null);
+  const [lastPlayed, setLastPlayed] = useState<{
+    note: string;
+    octave: number;
+    frequency: number;
+    stringLabel: string;
+    fret: number;
+  } | null>(null);
   const [localRootNote, setLocalRootNote] = useState(rootNote);
 
   const tunings = mode === "guitar" ? GUITAR_TUNINGS : BASS_TUNINGS;
   const currentTuning = externalTuning || tunings[0];
+  const hoverPlayActive = playOnHover || hoverPlayEnabled;
 
   // Sync local root note with prop
   useEffect(() => {
@@ -87,14 +96,22 @@ export function InteractiveFretboard({
 
   const fretCount = 12;
 
-  const getNoteAtPosition = useCallback((stringIdx: number, fret: number): string => {
+  const getNoteInfoAtPosition = useCallback((stringIdx: number, fret: number) => {
     const stringData = strings[stringIdx];
-    if (!stringData) return "";
+    if (!stringData) return null;
     const openPitch = Math.round(69 + 12 * Math.log2(stringData.frequency / 440));
     const notePitch = openPitch + fret;
-    const noteIndex = notePitch % 12;
-    return CHROMATIC[noteIndex];
+    return {
+      note: CHROMATIC[notePitch % 12],
+      octave: Math.floor(notePitch / 12) - 1,
+      frequency: stringData.frequency * 2 ** (fret / 12),
+      stringLabel: stringData.label,
+    };
   }, [strings]);
+
+  const getNoteAtPosition = useCallback((stringIdx: number, fret: number): string => {
+    return getNoteInfoAtPosition(stringIdx, fret)?.note ?? "";
+  }, [getNoteInfoAtPosition]);
 
   const isNoteInScale = useCallback((note: string): boolean => {
     if (scaleOverlay === "none") return false;
@@ -107,36 +124,34 @@ export function InteractiveFretboard({
   }, [scaleOverlay, localRootNote]);
 
   const handleNoteClick = useCallback((stringIdx: number, fret: number) => {
-    const note = getNoteAtPosition(stringIdx, fret);
-    const stringData = strings[stringIdx];
-    if (!stringData) return;
+    const info = getNoteInfoAtPosition(stringIdx, fret);
+    if (!info) return;
 
-    const frequency = stringData.frequency * 2 ** (fret / 12);
     const voice: PluckInstrument = mode === "bass" ? "bass" : "guitar-steel";
-    playReferencePluck(getAudioContext(), frequency, voice);
+    playReferencePluck(getAudioContext(), info.frequency, voice);
 
     setActiveString(stringIdx);
     setActiveFret(fret);
-    onNoteClick?.(stringIdx, fret, note);
+    setLastPlayed({ ...info, fret });
+    onNoteClick?.(stringIdx, fret, info.note);
 
     setTimeout(() => {
       setActiveString(null);
       setActiveFret(null);
     }, 300);
-  }, [getAudioContext, strings, mode, getNoteAtPosition, onNoteClick]);
+  }, [getAudioContext, mode, getNoteInfoAtPosition, onNoteClick]);
 
   const handleNoteHover = useCallback((stringIdx: number, fret: number, isEntering: boolean) => {
-    if (!playOnHover) return;
-    if (isEntering) {
-      const note = getNoteAtPosition(stringIdx, fret);
-      const stringData = strings[stringIdx];
-      if (!stringData) return;
+    setHoveredCell(isEntering ? { string: stringIdx, fret } : null);
+    if (!hoverPlayActive || !isEntering) return;
 
-      const frequency = stringData.frequency * 2 ** (fret / 12);
-      const voice: PluckInstrument = mode === "bass" ? "bass" : "guitar-steel";
-      playReferencePluck(getAudioContext(), frequency, voice);
-    }
-  }, [playOnHover, getAudioContext, strings, mode, getNoteAtPosition]);
+    const info = getNoteInfoAtPosition(stringIdx, fret);
+    if (!info) return;
+
+    const voice: PluckInstrument = mode === "bass" ? "bass" : "guitar-steel";
+    playReferencePluck(getAudioContext(), info.frequency, voice);
+    setLastPlayed({ ...info, fret });
+  }, [hoverPlayActive, getAudioContext, mode, getNoteInfoAtPosition]);
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -201,13 +216,16 @@ export function InteractiveFretboard({
 
           <button
             type="button"
-            onClick={() => setIsHovering(!isHovering)}
-            className={`glass-pill flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition ${
-              isHovering ? "bg-[var(--color-mint)] text-black" : "text-[var(--color-sand-2)]"
+            onClick={() => setHoverPlayEnabled((current) => !current)}
+            aria-pressed={hoverPlayActive}
+            disabled={playOnHover}
+            title={playOnHover ? "Hover play is enabled for this view" : "Play notes as you hover the fretboard"}
+            className={`glass-pill flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition disabled:cursor-not-allowed ${
+              hoverPlayActive ? "bg-[var(--color-mint)] text-black" : "text-[var(--color-sand-2)]"
             }`}
           >
             <Volume2 className="h-3 w-3" />
-            {isHovering ? "Hover Play ON" : "Hover Play"}
+            {hoverPlayActive ? "Hover Play ON" : "Hover Play"}
           </button>
         </div>
       )}
@@ -228,9 +246,10 @@ export function InteractiveFretboard({
           )}
         </div>
 
-        <div className="space-y-1">
+        <div className="-mx-1 overflow-x-auto px-1 pb-1">
+          <div className="min-w-[560px] space-y-1">
           {/* Fret numbers */}
-          <div className="flex pl-12">
+          <div className="flex pl-[52px]">
             {Array.from({ length: fretCount }, (_, i) => (
               <div
                 key={i}
@@ -241,19 +260,41 @@ export function InteractiveFretboard({
             ))}
           </div>
 
+          {/* Inlay strip (standard dot markers: 3, 5, 7, 9, double at 12) */}
+          <div className="flex pl-[52px]" aria-hidden="true">
+            {Array.from({ length: fretCount }, (_, i) => {
+              const fret = i + 1;
+              const hasSingleDot = [3, 5, 7, 9].includes(fret);
+              return (
+                <div key={fret} className="flex flex-1 items-center justify-center gap-1 py-0.5">
+                  {hasSingleDot ? <span className="h-1.5 w-1.5 rounded-full bg-white/30" /> : null}
+                  {fret === 12 ? (
+                    <>
+                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brass)]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brass)]" />
+                    </>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+
           {/* Strings */}
           {strings.map((stringData, stringIdx) => (
             <div key={stringData.label} className="flex items-center gap-1">
               {/* String label */}
-              <div className="w-12 text-right text-xs font-black text-[var(--color-sand-2)]">
+              <div className="w-12 shrink-0 text-right text-xs font-black text-[var(--color-sand-2)]">
                 {stringData.label}
               </div>
 
               {/* Frets */}
-              {Array.from({ length: fretCount }, (_, fret) => {
+              {Array.from({ length: fretCount }, (_, i) => {
+                const fret = i + 1;
                 const note = getNoteAtPosition(stringIdx, fret);
                 const isInScale = isNoteInScale(note);
+                const isRoot = isInScale && note === localRootNote;
                 const isActive = activeString === stringIdx && activeFret === fret;
+                const isHovered = hoveredCell?.string === stringIdx && hoveredCell.fret === fret;
 
                 return (
                   <button
@@ -262,34 +303,75 @@ export function InteractiveFretboard({
                     onClick={() => handleNoteClick(stringIdx, fret)}
                     onMouseEnter={() => handleNoteHover(stringIdx, fret, true)}
                     onMouseLeave={() => handleNoteHover(stringIdx, fret, false)}
-                    className={`relative flex-1 h-10 rounded-sm transition-all border ${
+                    onFocus={() => handleNoteHover(stringIdx, fret, true)}
+                    onBlur={() => handleNoteHover(stringIdx, fret, false)}
+                    aria-label={`${note}, ${stringData.label} string, fret ${fret}${isRoot ? ", root note" : isInScale ? ", in scale" : ""}`}
+                    aria-pressed={isActive}
+                    className={`relative h-10 flex-1 rounded-sm border transition-all ${
                       isActive
-                        ? "bg-[var(--color-mint)] border-[var(--color-mint)] text-black shadow-lg shadow-emerald-500/30"
-                        : isInScale
-                          ? "bg-[var(--color-brass)]/20 border-[var(--color-brass)]/40 text-[var(--color-brass)] hover:bg-[var(--color-brass)]/30"
-                          : "bg-white/5 border-white/10 text-[var(--color-sand-2)] hover:bg-white/10"
-                    }`}
+                        ? "border-[var(--color-mint)] bg-[var(--color-mint)] text-black shadow-lg shadow-emerald-500/30"
+                        : isRoot
+                          ? "border-[var(--color-copper)] bg-[var(--color-copper)]/35 text-white shadow-sm shadow-orange-500/20"
+                          : isInScale
+                            ? "border-[var(--color-brass)]/40 bg-[var(--color-brass)]/20 text-[var(--color-brass)] hover:bg-[var(--color-brass)]/30"
+                            : "border-white/10 bg-white/5 text-[var(--color-sand-2)] hover:bg-white/10"
+                    } ${isHovered && !isActive ? "ring-1 ring-white/50" : ""}`}
                     title={`${note} (${stringData.label} + ${fret})`}
                   >
                     <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black">
                       {note}
                     </span>
-                    {/* Fret marker dots */}
-                    {(fret === 2 || fret === 4 || fret === 6 || fret === 8 || fret === 10) && (
-                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/20" />
-                    )}
-                    {fret === 11 && (
-                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/20" />
-                    )}
                   </button>
                 );
               })}
             </div>
           ))}
+          </div>
         </div>
 
+        {/* Last played note readout */}
+        <div className="mt-3 flex min-h-9 flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-[11px]">
+          {lastPlayed ? (
+            <>
+              <span className="font-mono text-sm font-black text-[var(--color-mint)]">
+                {lastPlayed.note}
+                {lastPlayed.octave}
+              </span>
+              <span className="font-mono tabular-nums text-[var(--color-sand-2)]">
+                {lastPlayed.frequency.toFixed(2)} Hz
+              </span>
+              <span className="text-[var(--color-sand-2)]">
+                {lastPlayed.stringLabel} string · fret {lastPlayed.fret}
+              </span>
+              {isNoteInScale(lastPlayed.note) ? (
+                <span className="rounded-full bg-[var(--color-brass)]/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-brass)]">
+                  In {SCALE_NAMES[scaleOverlay]} ({localRootNote})
+                </span>
+              ) : null}
+            </>
+          ) : (
+            <span className="text-[var(--color-sand-2)]">
+              Click any fret to hear it. Enable Hover Play to audition scale shapes as you move across the neck.
+            </span>
+          )}
+        </div>
+
+        {scaleOverlay !== "none" ? (
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] font-semibold text-[var(--color-sand-2)]" aria-hidden="true">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[var(--color-copper)]" /> Root
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[var(--color-brass)]" /> In scale
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[var(--color-mint)]" /> Playing
+            </span>
+          </div>
+        ) : null}
+
         {/* Open strings */}
-        <div className="mt-4 flex items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-sand-2)]">
             Open strings:
           </span>

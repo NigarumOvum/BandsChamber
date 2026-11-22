@@ -11,16 +11,20 @@
     "test": "vitest run",
     "codegraph": "node scripts/generate-codegraph.mjs",
     "codegraph:query": "node scripts/query-codegraph.mjs",
-    "migrate:legacy-music-ownership": "node scripts/migrate-legacy-music-ownership.mjs"
+    "migrate:legacy-music-ownership": "node scripts/migrate-legacy-music-ownership.mjs",
+    "migrate:better-auth": "node scripts/migrate-auth-to-better-auth.mjs"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
     "@heroui/react": "^2.8.8",
     "@libsql/client": "^0.15.15",
+    "@libsql/kysely-libsql": "^0.4.1",
     "@samasante/liquid-glass": "^0.1.1",
     "@vercel/analytics": "^2.0.1",
+    "better-auth": "^1.7.27",
     "boneyard-js": "^1.9.0",
     "framer-motion": "^12.31.0",
+    "kysely": "^0.29.9",
     "lucide-react": "^0.562.0",
     "next": "16.2.7",
     "react": "19.2.4",

@@ -31,7 +31,7 @@ export function InfoTooltip({
       }
       placement={position}
       showArrow
-      className="bg-[var(--color-surface-strong)] border border-[var(--color-border)] text-[var(--color-foreground)]"
+      className="border border-[var(--color-border)] bg-[var(--color-surface-strong)]/90 text-[var(--color-foreground)] backdrop-blur-xl"
     >
       <button
         type="button"

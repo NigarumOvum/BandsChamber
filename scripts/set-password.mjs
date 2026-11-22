@@ -44,7 +44,7 @@ async function main() {
     console.log(`
 Usage: node scripts/set-password.mjs --email <email> --password <pass>
 
-Sets a new password for an existing user and rotates their sessions.
+Sets a new password for an existing Better Auth user and rotates their sessions.
 
 Requires environment variables:
   MUSIC_TURSO_DATABASE_URL, MUSIC_TURSO_AUTH_TOKEN
@@ -66,13 +66,13 @@ Requires environment variables:
   });
 
   const existing = await db.execute({
-    sql: "select id, email, is_admin from app_user where email = ? limit 1",
+    sql: "select id, email, isAdmin from user where email = ? limit 1",
     args: [email],
   });
   const row = existing.rows[0];
   if (!row) {
     const similar = await db.execute({
-      sql: "select email from app_user where email like ? limit 10",
+      sql: "select email from user where email like ? limit 10",
       args: [`%${email.split("@")[0]}%`],
     });
     console.log(`No user found with email: ${email}`);
@@ -84,24 +84,37 @@ Requires environment variables:
   }
 
   const now = new Date().toISOString();
-  await db.execute({
-    sql: "update app_user set password_hash = ?, updated_at = ? where id = ?",
-    args: [hashPassword(options.password), now, String(row.id)],
+  const userId = String(row.id);
+  const account = await db.execute({
+    sql: "select id from account where userId = ? and providerId = 'credential' limit 1",
+    args: [userId],
   });
-  await db.execute({ sql: "delete from app_session where user_id = ?", args: [String(row.id)] });
+  if (account.rows[0]) {
+    await db.execute({
+      sql: "update account set password = ?, updatedAt = ? where userId = ? and providerId = 'credential'",
+      args: [hashPassword(options.password), now, userId],
+    });
+  } else {
+    const { randomUUID } = await import("node:crypto");
+    await db.execute({
+      sql: `insert into account (id, accountId, providerId, userId, password, createdAt, updatedAt)
+            values (?, ?, 'credential', ?, ?, ?, ?)`,
+      args: [randomUUID(), userId, userId, hashPassword(options.password), now, now],
+    });
+  }
+  await db.execute({ sql: "delete from session where userId = ?", args: [userId] });
 
-  // Verify the stored hash the same way the app does.
   const check = await db.execute({
-    sql: "select password_hash from app_user where id = ?",
-    args: [String(row.id)],
+    sql: "select password from account where userId = ? and providerId = 'credential' limit 1",
+    args: [userId],
   });
-  const [salt, originalHash] = String(check.rows[0].password_hash).split(":");
+  const [salt, originalHash] = String(check.rows[0].password).split(":");
   const computed = scryptSync(options.password, salt, 64);
   const ok =
     computed.byteLength === Buffer.from(originalHash, "hex").byteLength &&
     timingSafeEqual(computed, Buffer.from(originalHash, "hex"));
 
-  console.log(`Password updated for: ${row.email} (admin: ${Number(row.is_admin) === 1})`);
+  console.log(`Password updated for: ${row.email} (admin: ${Number(row.isAdmin) === 1})`);
   console.log("Password verifies:", ok);
   console.log("Sessions rotated: yes");
   if (!ok) process.exit(1);

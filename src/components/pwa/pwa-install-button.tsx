@@ -25,7 +25,7 @@ export function PWAInstallButton({ className = "" }: { className?: string }) {
 
         {showIOSInstructions && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="relative w-full max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-2xl">
+            <div className="panel glass-shine relative w-full max-w-sm rounded-2xl border border-[var(--color-border)] p-6 shadow-2xl">
               <button
                 type="button"
                 onClick={() => setShowIOSInstructions(false)}

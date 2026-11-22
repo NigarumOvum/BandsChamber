@@ -43,6 +43,8 @@ const cspReportOnly = [
 const nextConfig: NextConfig = {
   /* config options here */
   turbopack: {},
+  // libSQL ships native bindings plus dynamic requires; keep it out of the bundle.
+  serverExternalPackages: ["@libsql/client", "@libsql/kysely-libsql", "kysely", "libsql"],
   async headers() {
     return [
       {

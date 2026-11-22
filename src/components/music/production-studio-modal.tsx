@@ -410,7 +410,7 @@ export function ProductionStudioModal({
                     role="alertdialog"
                     aria-modal="true"
                     aria-label="Save progress before exiting"
-                    className="relative z-10 w-full max-w-sm rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-modal-surface)] p-5 shadow-2xl"
+                    className="panel glass-shine relative z-10 w-full max-w-sm rounded-[1.5rem] border border-[var(--color-border)] p-5 shadow-2xl"
                   >
                     <h3 className="text-base font-black text-[var(--color-foreground)]">
                       {t("common.saveProgressTitle")}

@@ -1,20 +1,6 @@
 import { errorResponse, jsonResponse, parseJsonBody } from "@/lib/api";
-import { changePassword, requireApiUser } from "@/lib/auth";
-import { SESSION_COOKIE_NAME } from "@/lib/auth-constants";
+import { changePassword, getApiSession, requireApiUser } from "@/lib/auth";
 import { enforceRateLimit } from "@/lib/rate-limit";
-
-function getSessionId(request: Request): string | null {
-  const header = request.headers.get("cookie");
-  if (!header) return null;
-  for (const part of header.split(/;\s*/)) {
-    const separator = part.indexOf("=");
-    if (separator === -1) continue;
-    if (part.slice(0, separator) === SESSION_COOKIE_NAME) {
-      return decodeURIComponent(part.slice(separator + 1));
-    }
-  }
-  return null;
-}
 
 export async function POST(request: Request) {
   try {
@@ -31,11 +17,13 @@ export async function POST(request: Request) {
       identifier: user.id,
     });
     if (limited) return limited;
+
+    const session = await getApiSession(request);
     await changePassword({
       userId: user.id,
       currentPassword: body.currentPassword,
       nextPassword: body.nextPassword,
-      keepSessionId: getSessionId(request),
+      keepSessionId: session?.session.id ?? null,
     });
     return jsonResponse({ ok: true });
   } catch (error) {

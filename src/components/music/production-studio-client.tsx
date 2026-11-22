@@ -631,7 +631,7 @@ function ProductionStudioDashboard({
         return false;
       }
 
-      if (selectedMood !== "all" && song.topic?.toLowerCase().includes(selectedMood.toLowerCase())) {
+      if (selectedMood !== "all" && !song.topic?.toLowerCase().includes(selectedMood.toLowerCase())) {
         return false;
       }
 
@@ -672,6 +672,23 @@ function ProductionStudioDashboard({
       textColor: 'black'
     };
   }, [activeProject]);
+
+  const activeFilterCount =
+    [selectedGenre, selectedKey, selectedEmotion, selectedMood, selectedInstrument].filter(
+      (value) => value !== "all",
+    ).length +
+    (selectedProjectSlug !== "all" ? 1 : 0) +
+    (search.trim() ? 1 : 0);
+
+  const clearAllFilters = () => {
+    setSearch("");
+    setSelectedGenre("all");
+    setSelectedKey("all");
+    setSelectedEmotion("all");
+    setSelectedMood("all");
+    setSelectedProjectSlug("all");
+    setSelectedInstrument("all");
+  };
 
   const handleOpenStudio = (songId: string, tab: string = "lyrics") => {
     setSelectedSongId(songId);
@@ -1028,11 +1045,23 @@ function ProductionStudioDashboard({
             </button>
           );
         })}
+        {activeFilterCount > 0 ? (
+          <button
+            type="button"
+            onClick={clearAllFilters}
+            className="glass-pill ml-auto flex items-center gap-1.5 border-red-500/30 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-500/10"
+          >
+            <FilterX className="h-3.5 w-3.5" />
+            <span>Clear {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"}</span>
+          </button>
+        ) : null}
       </div>
-
       {/* 2. Songs Catalog & Search / Action Bar */}
       <div className={isStudioModalOpen ? "hidden" : "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"}>
         <div className="flex flex-1 flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold tabular-nums text-[var(--color-sand-2)]">
+            {filteredSongs.length} of {songs.length} songs
+          </span>
           <div className="relative min-w-[200px] flex-1 sm:min-w-[240px]">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-sand-2)]" />
             <input
@@ -1180,7 +1209,7 @@ function ProductionStudioDashboard({
                   }
                 }
               }}
-              className="relative z-10 max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-modal-surface)] shadow-2xl"
+              className="studio-modal-shell relative z-10 max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-[1.75rem] border border-[var(--color-border)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-[var(--color-stroke)] px-5 py-4">
                 <div>
@@ -1260,15 +1289,7 @@ function ProductionStudioDashboard({
                 <div className="flex flex-wrap items-center gap-2 border-t border-[var(--color-stroke)] pt-4">
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedGenre("all");
-                      setSelectedKey("all");
-                      setSelectedEmotion("all");
-                      setSelectedMood("all");
-                      setSelectedProjectSlug("all");
-                      setSelectedInstrument("all");
-                      setSearch("");
-                    }}
+                    onClick={clearAllFilters}
                     className="flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--color-sand-2)] transition hover:border-red-500/30 hover:text-red-500"
                   >
                     <FilterX className="h-3.5 w-3.5" />
@@ -1323,13 +1344,24 @@ function ProductionStudioDashboard({
               {search ? "No songs match your search filters." : "Create your first song to unlock the full production studio suite."}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsNewSongModalOpen(true)}
-            className="mt-2 flex items-center gap-1.5 rounded-xl bg-[var(--color-copper)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:brightness-110"
-          >
-            <Plus className="h-4 w-4" /> Create First Song
-          </button>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+            {activeFilterCount > 0 ? (
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-xs font-bold text-[var(--color-sand-2)] transition hover:border-[var(--color-copper)] hover:text-[var(--color-foreground)]"
+              >
+                <FilterX className="h-4 w-4" /> Clear filters ({activeFilterCount})
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setIsNewSongModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl bg-[var(--color-copper)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:brightness-110"
+            >
+              <Plus className="h-4 w-4" /> Create First Song
+            </button>
+          </div>
         </GlassSurface>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -1793,9 +1825,9 @@ function ProductionStudioDashboard({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 14 }}
               transition={{ type: "spring", stiffness: 350, damping: 28 }}
-              className="relative z-10 w-full max-w-lg overflow-hidden rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-modal-surface)] shadow-2xl"
+              className="panel glass-shine relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-[1.75rem] border border-[var(--color-border)] shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-[var(--color-stroke)] px-6 py-5">
+              <div className="flex shrink-0 items-center justify-between border-b border-[var(--color-stroke)] px-6 py-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--color-copper)] text-white shadow-md">
                     <Music2 className="h-5 w-5" />
@@ -1817,7 +1849,7 @@ function ProductionStudioDashboard({
                 </button>
               </div>
 
-              <form onSubmit={handleCreateSong} className="space-y-4 p-6">
+              <form onSubmit={handleCreateSong} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-6">
                 {/* Template Selection */}
                 <div className="space-y-2">
                   <label className="field-label">Choose a Template</label>
@@ -1969,7 +2001,7 @@ function ProductionStudioDashboard({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 14 }}
               transition={{ type: "spring", stiffness: 350, damping: 28 }}
-              className="relative z-10 w-full max-w-lg overflow-hidden rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-modal-surface)] shadow-2xl"
+              className="panel glass-shine relative z-10 max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-[1.75rem] border border-[var(--color-border)] shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-[var(--color-stroke)] px-6 py-5">
                 <div className="flex items-center gap-3">

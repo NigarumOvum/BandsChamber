@@ -94,7 +94,7 @@ describe("password reset", () => {
   it("resets via the fallback link, rotates the password, and revokes sessions", async () => {
     const user = await registerAndVerify("reset@example.com");
     await loginUser({ email: "reset@example.com", password: "password123" });
-    const sessionsBefore = await db.execute("select count(*) as c from app_session");
+    const sessionsBefore = await db.execute("select count(*) as c from session");
     expect(Number((sessionsBefore.rows[0] as Record<string, unknown>).c)).toBeGreaterThan(0);
 
     const resetUrl = await requestPasswordReset("reset@example.com");
@@ -109,7 +109,7 @@ describe("password reset", () => {
     const user2 = await loginUser({ email: "reset@example.com", password: "new-password-456" });
     expect(user2.id).toBe(user.id);
 
-    const sessionsAfter = await db.execute("select count(*) as c from app_session where user_id = ?", [user.id]);
+    const sessionsAfter = await db.execute("select count(*) as c from session where userId = ?", [user.id]);
     // Old sessions revoked; the new login created exactly one fresh session.
     expect(Number((sessionsAfter.rows[0] as Record<string, unknown>).c)).toBe(1);
 

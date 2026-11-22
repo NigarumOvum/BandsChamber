@@ -4,7 +4,10 @@
 
 - **Toolkit**: fresh login with zero grants sees Harmony + free banner;
   theory/progressions/piano (+QWERTY/MIDI) all sound and persist prefs across
-  reload. Progressions renders directly on the home page below the Harmony tab
+  reload. The Interactive Fretboard labels frets 1–12 with inlays, plays on
+  click or hover after enabling Hover Play, highlights the root vs. in-scale
+  frets, shows the last-played note/Hz/string/fret, and scrolls horizontally
+  on phones. Progressions renders directly on the home page below the Harmony tab
   area. Navbar shows compact harmony link; fullscreen button is next to the page
   title; navbar controls are icon-only. Chord Constructor How-to-Play Play chord
   sounds per instrument and follows inversion; Progressions has no Chord Voicing
@@ -63,9 +66,10 @@
   → Songs Library groups entries by band, sorts groups/song titles, and its
   filter shows all bands, one band, or Solo and persists per user; collapsed
   entries identify their band by color and accessible label → catalog filters
-  find it → modal tabs open → DAW import/play/export → grid↔ASCII round-trip →
-  band assign → collaborator sees the shared song.
-  (FR-020–FR-028)
+  find it (active-filter and result counts shown, clear-all works) → modal
+  tabs open → DAW import/play/export → grid↔ASCII round-trip (grid zoom and
+  playhead bar/beat readout work) → band assign → collaborator sees the
+  shared song. (FR-020–FR-028, FR-089)
 - **Prompts**: create template → run on song via Ollama → preview output →
   apply writes the correct field; denied without both page grants.
   (FR-029–FR-030)
@@ -73,9 +77,11 @@
   creds, lifetime order + monthly subscription + cancel + history reconcile;
   webhook updates survive restart. (FR-031–FR-036)
 - **Account/Auth**: full register → verify → login → forgot → reset →
-  change-password → change-email → logout cycle passes; admin toggles
-  propagate within a refresh; denied links land on `/account?denied=`.
-  (FR-001–FR-011)
+  change-password → change-email → logout cycle passes on Better Auth
+  (`better-auth.session_token`, single-use verify/reset ledger); legacy
+  `app_user` rows are migrated with the same ids so access, membership, and
+  songs stay attached; admin toggles propagate within a refresh; denied links
+  land on `/account?denied=`. (FR-001–FR-011, FR-090)
 - **PWA/i18n**: installable from a production build; offline reload shows
   pill + shell; locale switch translates chrome + music strings and persists
   per user; footer links/CTAs resolve. (FR-037–FR-040)
@@ -89,7 +95,7 @@
 
 **MVP = all currently implemented features, monetization free-first.**
 
-MVP is done when every FR-001–FR-088 passes with:
+MVP is done when every FR-001–FR-090 passes with:
 
 1. PayPal **sandbox or unconfigured** (paid buttons degrade gracefully to
    "not configured"); live payments are Phase 2.

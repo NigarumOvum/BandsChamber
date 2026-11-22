@@ -3,8 +3,19 @@
 ## 1. Stack & runtime
 
 - **Next.js 16** (App Router, React 19), TypeScript, Tailwind CSS v4
+- **Auth**: **Better Auth 1.7** (`src/lib/auth.ts`, Kysely `LibsqlDialect`,
+  handler at `src/app/api/auth/[...all]/route.ts`); email + password with a
+  custom scrypt hash/verify so legacy `app_user` hashes keep working;
+  server-side session lookup via `getSession`, 30-day cookie
+  `better-auth.session_token`; email verification required; single-use
+  verify/reset tokens enforced by the `app_email_token` ledger. Signing secret
+  from `BETTER_AUTH_SECRET` (falls back to `AUTH_SECRET`, then a dev default);
+  base URL from `APP_BASE_URL`/`NEXT_PUBLIC_APP_URL` or `BETTER_AUTH_URL`.
 - **Auth + app data**: single shared **Turso/libSQL** database
-  (`MUSIC_TURSO_DATABASE_URL` / `MUSIC_TURSO_AUTH_TOKEN`)
+  (`MUSIC_TURSO_DATABASE_URL` / `MUSIC_TURSO_AUTH_TOKEN`);
+  `next.config.ts` lists `@libsql/client`, `@libsql/kysely-libsql`, `kysely`,
+  and `libsql` in `serverExternalPackages` so the native driver stays out of
+  the webpack bundle
 - **UI**: HeroUI components, Framer Motion, lucide-react icons, `sonner` toasts;
   **liquid glass** refraction layer via `@samasante/liquid-glass`
   (`src/components/ui/glass-surface.tsx` → `<GlassSurface>`, site-tuned optics)
@@ -38,10 +49,17 @@ route**. Any new route must do the same (see §5).
 
 ## 3. Data model (one Turso DB, tables auto-created + `ensureColumn` migrations)
 
-**Auth** (`src/lib/auth.ts`): `app_user` (scrypt hash, `is_admin`, `email_verified_at`),
-`app_session` (30-day, `httpOnly` cookie `music_tool_session`), `app_email_token`
-(confirmation 24 h / reset 30 min, sha256, single-use), `app_page_access`
+**Auth** (`src/lib/auth.ts`): Better Auth tables `user` (name/email,
+`emailVerified`, `emailVerifiedAt`, `isAdmin`), `session` (30-day, `httpOnly`
+cookie `better-auth.session_token`), `account` (credential provider; scrypt
+`salt:hash` password), `verification` (Better Auth reset-token material); plus
+app tables `app_email_token` (confirmation 24 h / reset 30 min, sha256,
+single-use ledger because Better Auth tokens are signed JWTs), `app_page_access`
 (`(user_id, page_key)`), `app_email_change` (pending new-email confirmations).
+Legacy `app_user`/`app_session` rows are copied into `user`/`account` on cold
+start (`migrateLegacyAuthData`, idempotent) and can also be migrated with
+`npm run migrate:better-auth`; `scripts/add-user.mjs` and
+`scripts/set-password.mjs` write the Better Auth tables directly.
 
 **Music** (`src/lib/music/db.ts`): `songs` (+ `user_id`, `project_slug`, full
 metadata), `song_sections` / `song_layers` (name/text/JSON per song),
@@ -55,8 +73,10 @@ Pro $9.99 mo / Lifetime $149), `membership_subscriptions`
 
 ## 4. Roles & access
 
-- `is_admin` flag **or** bootstrap email (`BOOTSTRAP_ADMIN_EMAILS`) ⇒ admin
-  (full page map, immutable in UI).
+- `isAdmin` flag **or** bootstrap email (`BOOTSTRAP_ADMIN_EMAILS`) ⇒ admin
+  (full page map, immutable in UI). An active paid membership
+  (`hasActivePaidMembership`) also unlocks every page key; free plans and
+  lapsed subscriptions fall back to explicit grants.
 - 9 manageable page keys in `src/lib/access.ts`, grouped into Production
   Studio / Music Toolkit / Prompt Library hubs (`HUB_ACCESS_GROUPS`).
 - Toolkit tabs map to pageKeys: harmony→`theory-lab`, tuner→`musician-helpers`
@@ -87,12 +107,18 @@ Pro $9.99 mo / Lifetime $149), `membership_subscriptions`
 
 ## 5. Key flows
 
-- **Register → verify → login**: 8-char min, duplicate reject → token email
-  (or fallback URL) → verified gate at login → 30-day session.
-- **Password/email self-service**: logged-in change (current-password gated,
-  rotates other sessions); email change confirms via link to the **new**
-  address (`/account?email-change=`); logged-out change via email + current
-  password (`/api/auth/change-password`).
+- **Register → verify → login**: Better Auth `signUpEmail` (8-char min,
+  duplicate reject) → verification JWT email (or fallback URL) → verified gate
+  at login → 30-day session. Auth pages run their own server session check and
+  redirect logged-in users to `/`; `src/proxy.ts` only enforces "login
+  required" for non-public paths and no longer redirects auth pages from a
+  cookie, so a stale/revoked cookie can't bounce visitors between `/login` and
+  `/`.
+- **Password/email self-service**: verify/reset links are claimed once in
+  `app_email_token` before Better Auth consumes the JWT; logged-in password
+  change (current-password gated, rotates other sessions); email change
+  confirms via link to the **new** address (`/account?email-change=`);
+  logged-out change via email + current password (`/api/auth/change-password`).
 - **Songs**: catalog (owned + project-shared) → detail → sections/layers/
   partitures → modal tabs (lyrics / DAW / notation) → band assignment.
   The Songs Library sidebar groups songs by band, sorts band/song names
@@ -104,6 +130,13 @@ Pro $9.99 mo / Lifetime $149), `membership_subscriptions`
   note edit/quantize → JSON manifest export.
 - **Tabs**: fretboard grid ⇄ ASCII (`gridToAscii`/`parseAsciiTab`) ⇄ song
   partitures; step playback with loop/playhead.
+- **Composition UX** (2026-11-21): catalog filter bar shows the number of
+  active filters and matching results ("N of M songs") with a one-click
+  clear-all; Notation/Partitures adds a persisted zoom control (60–250 %), a
+  `Bar X · Beat Y · subdivision` playhead readout, and auto-follow scrolling;
+  the Interactive Fretboard adds hover-play auditioning, root vs. in-scale vs.
+  pressed emphasis, fret inlays, a last-played note/Hz readout, and
+  horizontal scrolling on narrow screens.
 - **Prompts**: template (song-field or part-scoped) → run on song via Ollama →
   preview → optional apply to the song field.
 - **Membership**: free select (instant) → one-time order/capture → subscription
@@ -117,7 +150,10 @@ Pro $9.99 mo / Lifetime $149), `membership_subscriptions`
 
 ## 6. Repo map (where things live)
 
-- `src/app/` — pages + `api/` route handlers (auth, account, music, membership)
+- `src/app/` — pages + `api/` route handlers (account, music, membership);
+  `src/app/api/auth/[...all]/route.ts` delegates the whole auth surface
+  (sign-up/in/out, verify, reset) to Better Auth via `toNextJsHandler`
+- `src/proxy.ts` — cookie-presence gate only (no DB, no auth-page redirects)
 - `src/components/music/` — feature clients (toolkit, studio, daw, tabs…)
 - `src/components/{auth,account,membership,pwa,ui}/` — cross-cutting UI
 - `src/components/ui/glass-surface.tsx` — shared `<GlassSurface>` primitive
@@ -165,5 +201,7 @@ Pro $9.99 mo / Lifetime $149), `membership_subscriptions`
 - `src/hooks/use-keyboard-shortcuts.ts` — global keyboard shortcuts hook
   (Space=play/stop, ←/→=prev/next, ⌘F=fullscreen, ⌘K=search)
 - `src/hooks/use-pwa.ts`, `public/manifest.webmanifest`, `public/sw.js`
-- `scripts/add-user.mjs`, `scripts/set-password.mjs` — admin DB ops
+- `scripts/add-user.mjs`, `scripts/set-password.mjs` — admin DB ops against the
+  Better Auth `user`/`account` tables; `scripts/migrate-auth-to-better-auth.mjs`
+  (`npm run migrate:better-auth`) copies legacy auth rows on demand
 - `docs/` — this documentation (source of truth for behavior)

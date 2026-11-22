@@ -12,18 +12,21 @@
   fallback URL when delivery is paused).
 - FR-002 Login fails generically on bad credentials and blocks unverified
   email with a confirm-email message.
-- FR-003 Email-confirm tokens (24 h, single-use, hashed) verify the user;
+- FR-003 Email-confirm tokens (24 h, single-use) verify the user via Better
+  Auth's signed token plus the `app_email_token` sha256 ledger;
   invalid/consumed/expired tokens error.
 - FR-004 Password-reset requests are enumeration-safe; reset tokens (30 min,
-  single-use) set a `≥8`-char password and revoke all sessions.
+  single-use via the same ledger) set a `≥8`-char password and revoke all
+  sessions.
 - FR-005 Logged-in password change requires the current password and rotates
   all other sessions while keeping the current one.
 - FR-006 Email change requires the password, rejects same/taken addresses,
   and swaps the login email only after new-address confirmation.
 - FR-007 Logged-out password change (login screen) requires email + current
   password and rotates all sessions.
-- FR-008 Sessions expire after 30 days; logout deletes the server session and
-  clears the cookie.
+- FR-008 Better Auth sessions (`better-auth.session_token`) expire after 30
+  days; logout deletes the server session, clears the cookie, and clears the
+  legacy pre-migration session/cookie.
 - FR-009 Admins list users (email/name/verified/admin + page map), rename
   non-admins, and set per-page access; admin rows are immutable in UI.
 - FR-010 Bootstrap admin emails are always treated as admin.
@@ -75,9 +78,12 @@
 ### Production studio
 - FR-020 Song catalog lists owned + project-shared songs with counts,
   search, genre/key/emotion/mood/project/instrument filters, and saved
-  presets. The Studio Songs Library sidebar groups songs by band and provides
-  an all-bands or single-band filter, including unassigned Solo songs; the
-  selection persists per user and collapsed entries identify each song's band.
+  presets. The filter bar shows the number of active filters and the matching
+  result count ("N of M songs") and offers one-click clear-all, including from
+  the empty state. The Studio Songs Library sidebar groups songs by band and
+  provides an all-bands or single-band filter, including unassigned Solo songs;
+  the selection persists per user and collapsed entries identify each song's
+  band.
 - FR-021 Song CRUD plus section/layer part upsert/delete persist and reload
   correctly.
 - FR-022 Band CRUD (slug/color/shared flag/members) works; member songs
@@ -92,7 +98,9 @@
   file upload buttons for MIDI, audio, and session files.
 - FR-026 Tab Studio grid edits generate valid ASCII tab; ASCII paste parses
   back; tuning switches preserve string mapping; playback steps with
-  loop + playhead jumps. Includes interactive fretboard grid with
+  loop + playhead jumps. The grid supports a persisted zoom control (60–250 %),
+  a `Bar · Beat · subdivision` playhead readout, and auto-follow scrolling
+  that keeps the playhead in view. Includes interactive fretboard grid with
   click-to-play, scale overlays, and customizable tunings.
 - FR-027 Studio modal opens any allowed tab for the selected song with
   split-view, pinned tabs, fullscreen, and exit-save confirmation.
@@ -269,15 +277,31 @@
   targets on mobile per WCAG guidelines, with responsive text sizing and
   spacing that adapts at sm (640px) breakpoint.
 
+### Composition UX & auth migration (2026-11-21)
+- FR-089 Interactive Fretboard supports click-to-play and hover-play
+  auditioning (a Hover Play toggle, or forced on by the host view), emphasizes
+  the root and in-scale frets with a legend, shows standard inlays at frets
+  3/5/7/9 and a double inlay at 12, labels frets 1–12 (open-string fret 0 is
+  the separate open-string row), reports the last played note/octave/Hz/
+  string/fret with in-scale status, and scrolls horizontally with a 560 px
+  minimum width on narrow screens.
+- FR-090 Better Auth migration: existing `app_user` identities (ids, scrypt
+  hashes, verification timestamps, admin flag) are copied into
+  `user`/`account` automatically on cold start and can be re-run with
+  `npm run migrate:better-auth`; page access, membership, and song ownership
+  keep the same user ids, and admin bootstrap emails still map to `isAdmin`.
+
 ## Non-functional requirements
 
 - NFR-001 **Performance**: lazy tab loads (`dynamic(ssr:false)`); PWA
   precache + NetworkFirst/CacheFirst splits; localStorage writes debounced
   ~600 ms; no full-list pagination (acceptable at current scale).
-- NFR-002 **Security**: scrypt + `timingSafeEqual`; hashed single-use email
-  tokens; `httpOnly`/`SameSite=Lax`/prod-`Secure` cookies; parameterized
-  queries; PayPal secret server-side only. Gaps to harden: rate-limiting,
-  lockout, CSP headers, webhook signature verification.
+- NFR-002 **Security**: Better Auth session handling with scrypt +
+  `timingSafeEqual` password hashing (legacy hashes preserved), hashed
+  single-use email tokens, `httpOnly`/`SameSite=Lax`/prod-`Secure` cookies,
+  parameterized queries, PayPal secret server-side only. Gaps to harden:
+  Better Auth rate limiting (currently disabled), lockout, CSP headers
+  (report-only today), webhook signature verification.
 - NFR-003 **Privacy**: per-user storage namespaces; song ownership + project
   scoping; email-change double opt-in. Known breadth: any non-empty
   `project_slug` song is readable by all logged-in users.
