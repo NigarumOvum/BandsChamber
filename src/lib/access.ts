@@ -6,7 +6,7 @@ export const MANAGEABLE_PAGES = [
   { key: "tab-studio", label: "Notation/Partitures", href: "/production-studio?tab=notation-audio" },
   { key: "musician-helpers", label: "Musician Helpers", href: "/?tab=tuner" },
   { key: "theory-lab", label: "Theory Lab", href: "/?tab=harmony" },
-  { key: "progressions", label: "Progressions", href: "/?tab=progressions" },
+  { key: "progressions", label: "Progressions", href: "/" },
   { key: "scales", label: "Scales", href: "/?tab=harmony" },
 ] as const;
 

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Music, Music2, WandSparkles } from "lucide-react";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -16,6 +17,12 @@ import { SkipLink } from "@/components/skip-link";
 import { ensureUserCanAccessPage, requireCurrentUser } from "@/lib/auth";
 import type { ManagedPageKey } from "@/lib/access";
 import { canAccessProductionStudio } from "@/lib/hub-access";
+
+const PAGE_ICONS: Record<string, ReactNode> = {
+  "Music Toolkit": <Music className="h-5 w-5 text-[var(--color-copper)]" />,
+  "Production Studio": <Music2 className="h-5 w-5 text-[var(--color-berry)]" />,
+  "Prompt Library": <WandSparkles className="h-5 w-5 text-[var(--color-purple)]" />,
+};
 
 type NavItemConfig = {
   href: string;
@@ -144,14 +151,21 @@ export async function AppShell({
               </aside>
             ) : null}
             <section className="space-y-4">
-              {/* Title row — eyebrow + h1 + optional fullscreen button */}
+              {/* Title row — icon + eyebrow + h1 + optional fullscreen button */}
               <div className="flex items-center justify-between gap-3 px-2 sm:px-4">
                 <div className="flex flex-col gap-0.5">
-                  <div className="flex items-baseline gap-3">
-                    <span className="eyebrow text-[0.65rem] opacity-60 uppercase tracking-[0.2em]">{eyebrow}</span>
-                    <h1 className="text-xl font-black tracking-tight text-[var(--color-foreground)]">{title}</h1>
+                  <div className="flex items-center gap-2.5">
+                    {PAGE_ICONS[title] && (
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface-strong)] border border-[var(--color-border)]">
+                        {PAGE_ICONS[title]}
+                      </div>
+                    )}
+                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-0 sm:gap-3">
+                      <span className="eyebrow text-[0.6rem] opacity-60 uppercase tracking-[0.2em]">{eyebrow}</span>
+                      <h1 className="text-lg sm:text-xl font-black tracking-tight text-[var(--color-foreground)]">{title}</h1>
+                    </div>
                   </div>
-                  <p className="text-xs text-[var(--color-sand-2)] opacity-80">{description}</p>
+                  <p className="text-xs text-[var(--color-sand-2)] opacity-80 line-clamp-1">{description}</p>
                 </div>
                 {titleSlot ? (
                   <div className="shrink-0">{titleSlot}</div>

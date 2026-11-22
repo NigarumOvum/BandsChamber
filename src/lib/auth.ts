@@ -6,6 +6,7 @@ import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypt
 import { ALL_ACCESS_PAGE_MAP, MANAGEABLE_PAGES, type ManagedPageKey } from "@/lib/access";
 import { SESSION_COOKIE_NAME } from "@/lib/auth-constants";
 import { sendEmail } from "@/lib/email";
+import { hasActivePaidMembership } from "@/lib/membership";
 
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 30;
 const EMAIL_CONFIRMATION_DURATION_MS = 1000 * 60 * 60 * 24;
@@ -65,6 +66,12 @@ function getAuthClient() {
 
   client = createClient({ url, authToken });
   return client;
+}
+
+/** Tests/ops only: swap the backing DB (e.g. in-memory libSQL) and reset bootstrap state. */
+export function setAuthDbClientForTests(nextClient: ReturnType<typeof createClient> | null) {
+  client = nextClient;
+  authTablesReady = false;
 }
 
 function isoNow() {
@@ -147,6 +154,18 @@ async function ensureBootstrapAdmins() {
 async function getUserPageAccessMap(userId: string, isAdmin: boolean) {
   if (isAdmin) {
     return ALL_ACCESS_PAGE_MAP;
+  }
+
+  // Active paid plans (Pro Creator / Studio Lifetime) unlock every page on
+  // top of manual admin grants; Free users stay grant-based.
+  try {
+    if (await hasActivePaidMembership(userId)) {
+      return ALL_ACCESS_PAGE_MAP;
+    }
+  } catch (error) {
+    // A membership lookup failure must never lock a user out of pages they
+    // were granted — continue with grant-based access only.
+    console.error("Paid-membership lookup failed; continuing with grants-only access", error);
   }
 
   await ensureAuthTables();

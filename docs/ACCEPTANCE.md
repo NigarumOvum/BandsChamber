@@ -3,12 +3,62 @@
 ## Acceptance criteria per area
 
 - **Toolkit**: fresh login with zero grants sees Harmony + free banner;
-  metronome/tuner/theory/progressions/piano (+QWERTY/MIDI) all sound and
-  persist prefs across reload. Tuner appears at top of Harmony tab; navbar
-  shows compact harmony/progressions links; fullscreen button is next to the
-  page title; navbar controls are icon-only. Chord Constructor How-to-Play
-  Play chord sounds per instrument and follows inversion; Progressions has
-  no Chord Voicing Preview section. (FR-012, FR-014–FR-019, FR-041, FR-042)
+  theory/progressions/piano (+QWERTY/MIDI) all sound and persist prefs across
+  reload. Progressions renders directly on the home page below the Harmony tab
+  area. Navbar shows compact harmony link; fullscreen button is next to the page
+  title; navbar controls are icon-only. Chord Constructor How-to-Play Play chord
+  sounds per instrument and follows inversion; Progressions has no Chord Voicing
+  Preview section. Metronome and Tuner removed from Harmony tab (2026-11-21).
+  (FR-012, FR-016–FR-019, FR-041, FR-042)
+- **Music theory analysis** (2026-11-21): Roman numeral analysis labels any
+  progression in any key/scale; mode interchange detects borrowed chords with
+  source mode; cadence detection finds Authentic/Plagal/Half/Deceptive/Backdoor/
+  Ritardando/Imperfect/Phrygian Half patterns; chord substitution suggests
+  tritone/major-minor swap/extensions/diatonic/rootless options; scale/chord
+  compatibility maps Perfect/Good/Okay/Avoid ratings; key signatures show all
+  12 major/minor keys with relative and closely related keys; rhythm pattern
+  library provides 12 presets across 8 categories; chord voicing generates
+  Close/Open/Rootless/Drop 2/Drop 3/Shell/Cluster options. (FR-044–FR-051)
+- **Interactive tools** (2026-11-21): Circle of Fifths renders interactive SVG
+  with key details and related keys; Practice Mode provides ear training with
+  stats and streaks; Drum Pattern Editor offers 16-step sequencer with MIDI
+  export; Bass Line Generator creates lines in 4 styles; Melody Generator
+  creates melodies in 4 styles; Progression Export downloads MIDI or text;
+  keyboard shortcuts (Space/←/→/⌘F/⌘K) work globally. (FR-052–FR-058)
+- **Music theory extended** (2026-11-21): Voice leading analysis detects parallel
+  fifths/octaves and suggests improvements; chord recognition identifies chords
+  from note sets; modulation detection finds key changes with pivot chords;
+  rhythm analysis auto-detects time signature/BPM/swing; 12 extended progression
+  presets in K-Pop/J-Pop/R&B/Film/Metal categories; 10 microtonal scales with
+  frequency calculation. (FR-059–FR-064)
+- **Audio engine extended** (2026-11-21): Effects chain applies reverb/delay/
+  compression/EQ/distortion with presets; chord strumming provides 7 patterns
+  and 8 arpeggio styles. (FR-065–FR-066)
+- **UI extended** (2026-11-21): Piano Roll Editor for MIDI note creation;
+  Chord Diagram Generator for fretboard visualization; Waveform Visualizer
+  for real-time audio; Song Structure Timeline for arrangement; Theme Toggle
+  with system preference detection; Mobile Responsive CSS utilities;
+  Progression Timeline with playhead. (FR-067–FR-073)
+- **Data & Analytics** (2026-11-21): Song Statistics Dashboard shows keys/
+  genres/bands distribution; Practice Session Tracking logs and displays
+  weekly stats. (FR-074–FR-075)
+- **Export formats** (2026-11-21): MusicXML export for notation software;
+  ABC notation export; shareable progression links via URL encoding.
+  (FR-076–FR-078)
+- **AI features** (2026-11-21): AI chord progression suggestions via Ollama
+  with fallback; AI rhyme dictionary; AI style transfer for progressions.
+  (FR-079–FR-081)
+- **Accessibility** (2026-11-21): ARIA roles for piano/fretboard/DAW/drum
+  components with proper labels and keyboard navigation. (FR-082)
+- **UI/UX enhancements** (2026-11-21): AppShell displays page icons and
+  responsive title layout; CollapsibleCard uses mobile-friendly padding,
+  touch targets (44px min), and proper chevron button with ARIA labels;
+  Theory Lab uses simplified titles ("Scales & Keyboard", "Chords"),
+  icon-only mode toggles on mobile, and scrollable piano/fretboard;
+  Progression client uses simplified titles ("Progressions", "Presets"),
+  responsive playback settings, icon-only buttons on mobile, and smaller
+  chord tiles. Global CSS includes safe area insets, reduced motion support,
+  high contrast mode, and horizontal overflow prevention. (FR-083–FR-088)
 - **Studio**: create song → edit lyrics/metadata/sections/layers/partitures
   → Songs Library groups entries by band, sorts groups/song titles, and its
   filter shows all bands, one band, or Solo and persists per user; collapsed
@@ -39,7 +89,7 @@
 
 **MVP = all currently implemented features, monetization free-first.**
 
-MVP is done when every FR-001–FR-043 passes with:
+MVP is done when every FR-001–FR-088 passes with:
 
 1. PayPal **sandbox or unconfigured** (paid buttons degrade gracefully to
    "not configured"); live payments are Phase 2.
@@ -51,6 +101,8 @@ MVP is done when every FR-001–FR-043 passes with:
 
 Live PayPal verification + webhook signature hardening + plan-gating
 enforcement (plans display but don't gate features yet); shared (DB-backed)
-comments; DAW audio recording; rhyme suggestions; API/DB/e2e test coverage;
+comments; **DAW audio recording** (microphone input, waveform editing, live
+audio tracks alongside MIDI); rhyme suggestions; API/DB/e2e test coverage;
 central auth middleware; collaborator-endpoint scoping; song-visibility
-tightening; accessibility audit.
+tightening; accessibility audit (contrast/keyboard navigation for all
+interactive elements).

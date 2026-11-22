@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Download, Layers, Music, Piano, PlayCircle, Plus, RotateCcw, Repeat, Trash2, Zap } from "lucide-react";
+import { Download, Layers, Music, Piano, PlayCircle, Plus, RotateCcw, Repeat, Trash2, Zap, Headphones, Minus, Plus as PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { CollapsibleCard } from "@/components/collapsible-card";
@@ -231,53 +231,53 @@ export function ProgressionClient() {
       {/* 1. Progression Timeline & Audio Player (Important: Open by default) */}
       <CollapsibleCard
         defaultOpen={true}
-        title={t("prog.timeline")}
-        subtitle={t("prog.timelineSub").replace("{count}", String(progression.length)).replace("{plural}", pluralSuffix).replace("{key}", keyRoot)}
-        eyebrow="Harmonic Structure"
+        title="Progressions"
+        subtitle={`${progression.length} chord${pluralSuffix} in ${keyRoot}`}
+        eyebrow="Build"
         icon={<Music className="h-5 w-5 text-[var(--color-copper)]" />}
         badge={
-          <span className="glass-pill px-2.5 py-0.5 text-[10px] font-bold text-[var(--color-mint)]">
-            {keyRoot} Major
+          <span className="glass-pill px-2 py-0.5 text-[10px] font-bold text-[var(--color-mint)]">
+            {keyRoot}
           </span>
         }
         headerActions={
           <div className="flex items-center gap-1.5">
-            <InfoTooltip content={t("prog.timelineHelp")} position="left" />
+            <InfoTooltip content="Build and play chord progressions" position="left" size="sm" />
             <button
               type="button"
               disabled={progression.length === 0}
               onClick={playProgression}
               title="Play progression"
-              className="glass-pill btn-sound flex items-center gap-1.5 bg-[var(--color-copper)] px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-30"
+              className="glass-pill btn-sound flex items-center gap-1.5 bg-[var(--color-copper)] px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-30 min-h-[32px]"
             >
               <PlayCircle className="h-4 w-4" />
-              {isPlaying ? "Stop" : "Play"}
+              <span className="hidden sm:inline">{isPlaying ? "Stop" : "Play"}</span>
             </button>
             <button
               type="button"
               onClick={exportProgression}
               disabled={progression.length === 0}
-              aria-label={t("prog.export")}
-              title={t("prog.export")}
-              className="glass-pill px-3 py-1.5 text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
+              aria-label="Export"
+              title="Export"
+              className="glass-pill p-1.5 text-[10px] font-black disabled:opacity-30 min-h-[32px] min-w-[32px]"
             >
               <Download className="h-3.5 w-3.5" />
             </button>
           </div>
         }
       >
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* ── Playback settings strip ── */}
-          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/8 bg-black/20 px-3 py-2">
+          <div className="flex flex-col sm:flex-wrap sm:flex items-start sm:items-center gap-2 sm:gap-2 rounded-xl sm:rounded-2xl border border-white/8 bg-black/20 px-3 py-2.5">
             {/* Voice selector */}
-            <label className="inline-flex items-center gap-1.5">
-              <Piano className="h-3.5 w-3.5 shrink-0 text-[var(--color-brass)]" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-sand-2)]">Sound</span>
+            <label className="inline-flex items-center gap-1.5 w-full sm:w-auto">
+              <Headphones className="h-3.5 w-3.5 shrink-0 text-[var(--color-brass)]" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-sand-2)] hidden sm:inline">Sound</span>
               <select
                 value={keyboardVoice}
                 onChange={(e) => setKeyboardVoice(e.target.value as KeyboardVoice)}
                 title="Change the sound used to play chords"
-                className="field py-1 text-xs font-bold"
+                className="field py-1.5 text-xs font-bold"
               >
                 {KEYBOARD_VOICES.map((v) => (
                   <option key={v.id} value={v.id}>{v.label}</option>
@@ -285,7 +285,7 @@ export function ProgressionClient() {
               </select>
             </label>
 
-            <div className="h-4 w-px bg-[var(--color-border)]" />
+            <div className="hidden sm:block h-4 w-px bg-[var(--color-border)]" />
 
             {/* Octave */}
             <label className="inline-flex items-center gap-1.5">
@@ -294,7 +294,7 @@ export function ProgressionClient() {
                 value={keyboardOctave}
                 onChange={(e) => setKeyboardOctave(Number(e.target.value))}
                 title="Change the playback octave"
-                className="field py-1 text-xs font-bold"
+                className="field py-1.5 text-xs font-bold"
               >
                 {[1, 2, 3, 4, 5].map((o) => (
                   <option key={o} value={o}>{o}</option>
@@ -302,7 +302,7 @@ export function ProgressionClient() {
               </select>
             </label>
 
-            <div className="h-4 w-px bg-[var(--color-border)]" />
+            <div className="hidden sm:block h-4 w-px bg-[var(--color-border)]" />
 
             {/* BPM */}
             <label className="inline-flex items-center gap-1.5">
@@ -312,16 +312,16 @@ export function ProgressionClient() {
                 onClick={() => setBpm((b) => Math.max(40, b - 5))}
                 aria-label="Decrease tempo by 5 BPM"
                 title="Decrease tempo by 5 BPM"
-                className="glass-pill flex h-6 w-6 items-center justify-center text-[10px] font-black text-[var(--color-sand-2)] hover:text-white"
-              >−</button>
+                className="glass-pill flex h-7 w-7 items-center justify-center text-sm font-black text-[var(--color-sand-2)] hover:text-white"
+              ><Minus className="h-3 w-3" /></button>
               <span className="min-w-[2.4rem] text-center text-sm font-black tabular-nums">{bpm}</span>
               <button
                 type="button"
                 onClick={() => setBpm((b) => Math.min(240, b + 5))}
                 aria-label="Increase tempo by 5 BPM"
                 title="Increase tempo by 5 BPM"
-                className="glass-pill flex h-6 w-6 items-center justify-center text-[10px] font-black text-[var(--color-sand-2)] hover:text-white"
-              >+</button>
+                className="glass-pill flex h-7 w-7 items-center justify-center text-sm font-black text-[var(--color-sand-2)] hover:text-white"
+              ><PlusIcon className="h-3 w-3" /></button>
               <input
                 type="range"
                 min={40}
@@ -330,11 +330,11 @@ export function ProgressionClient() {
                 onChange={(e) => setBpm(Number(e.target.value))}
                 aria-label="Progression playback tempo"
                 title="Adjust progression playback tempo"
-                className="hidden h-1.5 w-20 cursor-pointer appearance-none rounded-lg bg-zinc-800 accent-[var(--color-copper)] sm:block"
+                className="hidden h-1.5 w-20 cursor-pointer appearance-none rounded-lg bg-zinc-800 accent-[var(--color-copper)] lg:block"
               />
             </label>
 
-            <div className="h-4 w-px bg-[var(--color-border)]" />
+            <div className="hidden sm:block h-4 w-px bg-[var(--color-border)]" />
 
             {/* Loop toggle */}
             <button
@@ -343,33 +343,33 @@ export function ProgressionClient() {
               title={loopPlayback ? "Turn progression looping off" : "Repeat the progression"}
               aria-pressed={loopPlayback}
               aria-label={loopPlayback ? "Turn progression looping off" : "Repeat the progression"}
-              className={`glass-pill inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest transition ${loopPlayback ? "bg-[var(--color-copper)]/20 text-[var(--color-copper)] border-[var(--color-copper)]/40" : "text-[var(--color-sand-2)]"}`}
+              className={`glass-pill inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest transition min-h-[32px] ${loopPlayback ? "bg-[var(--color-copper)]/20 text-[var(--color-copper)] border-[var(--color-copper)]/40" : "text-[var(--color-sand-2)]"}`}
             >
               <Repeat className="h-3 w-3" />
-              Loop
+              <span className="hidden sm:inline">Loop</span>
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-[var(--color-sand-2)]">Transpose:</span>
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-[11px] sm:text-xs font-bold text-[var(--color-sand-2)]">Transpose:</span>
               <button
                 type="button"
                 onClick={() => transposeAll(-1)}
                 disabled={progression.length === 0}
                 title="Transpose all chords down one semitone"
-                className="glass-pill px-2.5 py-1 text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
+                className="glass-pill px-2 py-1.5 text-[10px] font-black uppercase tracking-widest disabled:opacity-30 min-h-[32px]"
               >
-                -1 st
+                −1
               </button>
               <button
                 type="button"
                 onClick={() => transposeAll(1)}
                 disabled={progression.length === 0}
                 title="Transpose all chords up one semitone"
-                className="glass-pill px-2.5 py-1 text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
+                className="glass-pill px-2 py-1.5 text-[10px] font-black uppercase tracking-widest disabled:opacity-30 min-h-[32px]"
               >
-                +1 st
+                +1
               </button>
             </div>
 
@@ -379,16 +379,17 @@ export function ProgressionClient() {
               disabled={progression.length === 0}
               title="Remove every chord from the timeline"
               aria-label="Clear all progression chords"
-              className="flex items-center gap-1 text-[11px] font-bold text-red-500 hover:underline disabled:opacity-30"
+              className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-red-500 hover:underline disabled:opacity-30 min-h-[32px]"
             >
-              <RotateCcw className="h-3.5 w-3.5" /> Clear All
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Clear</span>
             </button>
           </div>
 
-          <div className="flex min-h-[120px] flex-wrap gap-2 rounded-2xl border border-dashed border-[var(--color-border)] bg-black/15 p-4">
+          <div className="flex min-h-[100px] sm:min-h-[120px] flex-wrap gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl border border-dashed border-[var(--color-border)] bg-black/15 p-3 sm:p-4">
             {progression.length === 0 ? (
-              <div className="flex w-full items-center justify-center py-6 text-xs text-[var(--color-sand-2)]">
-                Add chords below or load a preset to start building.
+              <div className="flex w-full items-center justify-center py-6 text-[11px] sm:text-xs text-[var(--color-sand-2)]">
+                Add chords or load a preset ↓
               </div>
             ) : null}
             {progression.map((chord, idx) => {
@@ -401,7 +402,7 @@ export function ProgressionClient() {
                   tabIndex={0}
                   aria-label={`Play ${chord.root}${chord.quality}`}
                   title={`Tap to play ${chord.root}${chord.quality}`}
-                  className={`group btn-sound relative flex h-28 w-[4.5rem] cursor-pointer flex-col items-center justify-center rounded-xl border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-copper)] ${
+                  className={`group btn-sound relative flex h-20 sm:h-28 w-[3.5rem] sm:w-[4.5rem] cursor-pointer flex-col items-center justify-center rounded-lg sm:rounded-xl border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-copper)] ${
                     activeChordId === chord.id
                       ? "border-[var(--color-mint)] bg-[var(--color-success-surface)] shadow-[0_0_20px_rgba(34,197,94,0.25)]"
                       : "song-list-item border-[var(--color-stroke)]"
@@ -425,14 +426,14 @@ export function ProgressionClient() {
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>
-                  <span className="text-lg font-black leading-none">{chord.root}</span>
-                  <span className="text-[8px] font-bold uppercase text-[var(--color-brass)]">{chord.quality}</span>
+                  <span className="text-base sm:text-lg font-black leading-none">{chord.root}</span>
+                  <span className="text-[7px] sm:text-[8px] font-bold uppercase text-[var(--color-brass)]">{chord.quality}</span>
                   {analysis ? (
-                    <span className="mt-1 text-[8px] font-black text-[var(--color-mint)]" title={analysis.functionLabel}>
+                    <span className="mt-0.5 sm:mt-1 text-[7px] sm:text-[8px] font-black text-[var(--color-mint)]" title={analysis.functionLabel}>
                       {analysis.numeral}
                     </span>
                   ) : (
-                    <span className="mt-1 text-[8px] font-bold text-zinc-500">#{idx + 1}</span>
+                    <span className="mt-0.5 sm:mt-1 text-[7px] sm:text-[8px] font-bold text-zinc-500">#{idx + 1}</span>
                   )}
                 </motion.div>
               );
@@ -440,9 +441,9 @@ export function ProgressionClient() {
             <button
               type="button"
               onClick={() => setProgression([...progression, { id: crypto.randomUUID(), root, quality }])}
-              className="flex h-28 w-[4.5rem] items-center justify-center rounded-xl border border-dashed border-[var(--color-border)] transition hover:border-[var(--color-copper)]"
+              className="flex h-20 sm:h-28 w-[3.5rem] sm:w-[4.5rem] items-center justify-center rounded-lg sm:rounded-xl border border-dashed border-[var(--color-border)] transition hover:border-[var(--color-copper)]"
             >
-              <Plus className="h-5 w-5 text-[var(--color-sand-2)]" />
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--color-sand-2)]" />
             </button>
           </div>
 
@@ -459,7 +460,7 @@ export function ProgressionClient() {
             ) : null;
           })()}
 
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-2 sm:gap-3 sm:grid-cols-2 md:grid-cols-4">
             <label className="field-group">
               <span className="field-label">Key</span>
               <select value={keyRoot} onChange={(event) => setKeyRoot(event.target.value)} className="field py-2">
@@ -483,9 +484,10 @@ export function ProgressionClient() {
                 type="button"
                 onClick={() => setProgression([...progression, { id: crypto.randomUUID(), root, quality }])}
                 title={`Add ${root} ${quality} chord to the progression`}
-                className="glass-pill w-full px-4 py-2.5 text-[10px] font-black uppercase tracking-widest"
+                className="glass-pill w-full flex items-center justify-center gap-1.5 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest min-h-[44px]"
               >
-                Add chord
+                <Plus className="h-3.5 w-3.5" />
+                Add
               </button>
             </div>
           </div>
@@ -495,21 +497,21 @@ export function ProgressionClient() {
       {/* 2. Preset Chord Catalog (Important: Open by default) */}
       <CollapsibleCard
         defaultOpen={true}
-        title="Progression Preset Library"
-        subtitle={`${filteredPresets.length} curated harmonic sequences across genres`}
-        eyebrow="Songcrafting Presets"
+        title="Presets"
+        subtitle={`${filteredPresets.length} progressions to start with`}
+        eyebrow="Library"
         icon={<Layers className="h-5 w-5 text-[var(--color-brass)]" />}
         headerActions={
           <div className="flex items-center gap-2">
-            <InfoTooltip content={t("prog.presetsHelp")} position="left" />
+            <InfoTooltip content="Tap a preset to load it" position="left" size="sm" />
             <select
               value={presetCategory}
               onChange={(event) => setPresetCategory(event.target.value)}
-              aria-label={t("prog.allCategories")}
-              title={t("prog.allCategories")}
-              className="field w-auto py-1 text-xs font-bold"
+              aria-label="All categories"
+              title="All categories"
+              className="field w-auto py-1.5 text-xs font-bold"
             >
-              <option value="All">{t("prog.allCategories")}</option>
+              <option value="All">All</option>
               {PROGRESSION_CATEGORIES.map((category) => (
                 <option key={category} value={category}>{category}</option>
               ))}
@@ -517,21 +519,21 @@ export function ProgressionClient() {
           </div>
         }
       >
-        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-2 sm:gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
           {filteredPresets.map((preset) => (
             <button
               key={preset.id}
               type="button"
               onClick={() => applyPreset(preset)}
               title={preset.description}
-              className="song-list-item rounded-2xl p-4 text-left transition hover:border-[var(--color-copper)]"
+              className="song-list-item rounded-xl sm:rounded-2xl p-3 sm:p-4 text-left transition hover:border-[var(--color-copper)] min-h-[44px]"
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="text-sm font-black text-[var(--color-foreground)]">{preset.name}</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-brass)]">{preset.category}</span>
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--color-brass)]">{preset.category}</span>
               </div>
-              <p className="mt-1 line-clamp-1 text-xs text-[var(--color-sand-2)]">{preset.description}</p>
-              <p className="mt-2 font-mono text-[11px] font-bold text-[var(--color-copper)]">
+              <p className="mt-0.5 line-clamp-1 text-[11px] sm:text-xs text-[var(--color-sand-2)]">{preset.description}</p>
+              <p className="mt-1.5 sm:mt-2 font-mono text-[10px] sm:text-[11px] font-bold text-[var(--color-copper)]">
                 {preset.chords.map((chord) => `${chord.root}${chord.quality === "Maj" ? "" : chord.quality}`).join(" · ")}
               </p>
             </button>

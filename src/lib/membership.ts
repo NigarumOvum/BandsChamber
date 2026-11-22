@@ -62,6 +62,12 @@ function getMembershipClient() {
   return client;
 }
 
+/** Tests/ops only: swap the backing DB (e.g. in-memory libSQL) and reset bootstrap state. */
+export function setMembershipDbClientForTests(nextClient: ReturnType<typeof createClient> | null) {
+  client = nextClient;
+  membershipTablesReady = false;
+}
+
 function isoNow() {
   return new Date().toISOString();
 }
@@ -298,6 +304,43 @@ export async function getUserSubscription(userId: string): Promise<(MembershipSu
   const subscription = mapSubscriptionRow(row);
   const plan = await getPlan(subscription.planId);
   return { ...subscription, plan };
+}
+
+/**
+ * Whether the user's latest subscription is an ACTIVE paid plan (Pro Creator /
+ * Studio Lifetime). Drives page-access unlocking: paid members get every
+ * pageKey; Free users rely on manual admin grants.
+ */
+export async function hasActivePaidMembership(userId: string): Promise<boolean> {
+  await ensureMembershipTables();
+  const db = getMembershipClient();
+  const result = await db.execute({
+    sql: `SELECT s.status AS status, s.current_period_end AS current_period_end, p.price_cents AS price_cents
+          FROM membership_subscriptions s
+          LEFT JOIN membership_plans p ON p.id = s.plan_id
+          WHERE s.user_id = ?
+          ORDER BY CASE s.status WHEN 'active' THEN 0 WHEN 'pending' THEN 1 WHEN 'past_due' THEN 2 ELSE 3 END, s.updated_at DESC
+          LIMIT 1`,
+    args: [userId],
+  });
+  const row = result.rows[0] as Record<string, unknown> | undefined;
+  if (!row || String(row.status) !== "active") {
+    return false;
+  }
+
+  // Free (or missing) plans never unlock paid access.
+  if (Number(row.price_cents ?? 0) <= 0) {
+    return false;
+  }
+
+  // Defensive: a lapsed period that PayPal has not yet expired/cancelled
+  // should not keep unlocking pages.
+  const periodEnd = (row.current_period_end as string | null) ?? null;
+  if (periodEnd && new Date(periodEnd).getTime() <= Date.now()) {
+    return false;
+  }
+
+  return true;
 }
 
 export async function findSubscriptionByPaypalId(paypalSubscriptionId: string): Promise<MembershipSubscription | null> {

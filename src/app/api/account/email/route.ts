@@ -1,5 +1,6 @@
 import { errorResponse, jsonResponse, parseJsonBody } from "@/lib/api";
 import { requestEmailChange, requireApiUser } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
@@ -8,6 +9,14 @@ export async function POST(request: Request) {
     if (!body.password || !body.newEmail) {
       throw new Error("Password and new email are required");
     }
+
+    // Email-flood guard: 5 requests / hour per account.
+    const limited = enforceRateLimit(request, "account:email", {
+      limit: 5,
+      windowMs: 60 * 60_000,
+      identifier: user.id,
+    });
+    if (limited) return limited;
     const result = await requestEmailChange({
       userId: user.id,
       password: body.password,

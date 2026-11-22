@@ -169,7 +169,7 @@ export function BandManagerModal({
   const [color, setColor] = useState("#f59e0b");
   const [customColorInput, setCustomColorInput] = useState("#f59e0b");
   const [colorCategoryOpen, setColorCategoryOpen] = useState<string | null>(null);
-  const [isSharedWithAll, setIsSharedWithAll] = useState(true);
+  const [isSharedWithAll, setIsSharedWithAll] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [collaborators, setCollaborators] = useState<MusicCollaboratorUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -191,7 +191,7 @@ export function BandManagerModal({
         setDescription("");
         setColor("#f59e0b");
         setCustomColorInput("#f59e0b");
-        setIsSharedWithAll(true);
+        setIsSharedWithAll(false);
         setSelectedMemberIds([]);
       }
 

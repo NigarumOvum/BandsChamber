@@ -5,15 +5,6 @@ type EmailPayload = {
   text?: string;
 };
 
-function getResendApiKey() {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY is not configured");
-  }
-
-  return apiKey;
-}
-
 function getFromEmail() {
   return process.env.RESEND_FROM_EMAIL?.trim() || "onboarding@resend.dev";
 }
@@ -23,10 +14,17 @@ export type SendEmailResult =
   | { ok: false; code: "recipient_not_allowed" | "error"; message: string };
 
 export async function sendEmail(payload: EmailPayload): Promise<SendEmailResult> {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) {
+    // Soft-fail so callers surface fallback links (FR-001) instead of
+    // hard-failing registration/reset flows when delivery is not configured.
+    return { ok: false, code: "error", message: "RESEND_API_KEY is not configured" };
+  }
+
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${getResendApiKey()}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({

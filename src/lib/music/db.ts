@@ -89,6 +89,12 @@ function getMusicClient() {
   return client;
 }
 
+/** Tests/ops only: swap the backing DB (e.g. in-memory libSQL) and reset bootstrap state. */
+export function setMusicDbClientForTests(nextClient: ReturnType<typeof createClient> | null) {
+  client = nextClient;
+  supportTablesReady = false;
+}
+
 function isoNow() {
   return new Date().toISOString();
 }
@@ -362,7 +368,7 @@ async function ensureMusicSupportTables() {
       slug text NOT NULL,
       description text,
       color text,
-      is_shared_with_all integer NOT NULL DEFAULT 1,
+      is_shared_with_all integer NOT NULL DEFAULT 0,
       created_at text NOT NULL,
       updated_at text NOT NULL
     )
@@ -386,7 +392,7 @@ async function ensureMusicSupportTables() {
     ON project_members (project_id, user_id)
   `);
 
-  await ensureColumn("projects", "is_shared_with_all", "integer NOT NULL DEFAULT 1");
+  await ensureColumn("projects", "is_shared_with_all", "integer NOT NULL DEFAULT 0");
   await ensureColumn("projects", "color", "text");
 
   supportTablesReady = true;
@@ -1318,7 +1324,9 @@ export async function createProject(userId: string, input: MusicProjectDraftInpu
   const slug = input.slug?.trim() || slugifyProjectName(name);
   const description = normalizeText(input.description);
   const color = normalizeText(input.color) || "#f59e0b";
-  const isSharedWithAll = input.isSharedWithAll !== false ? 1 : 0;
+  // Sharing with every logged-in user is opt-in: projects default to private
+  // (owner + explicit members only).
+  const isSharedWithAll = input.isSharedWithAll === true ? 1 : 0;
 
   await db.execute({
     sql: `

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { FreeAccessBanner } from "@/components/header-bits";
 import { MusicToolkitClient } from "@/components/music/music-toolkit-client";
+import { ProgressionClientWrapper } from "@/components/music/progression-client-wrapper";
 import { ToolkitNavLinks } from "@/components/toolkit-nav-links";
 import { FullscreenTitleButton } from "@/components/fullscreen-context";
 import {
@@ -43,7 +44,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     <AppShell
       title="Music Toolkit"
       eyebrow="Theory and practice"
-      description="Scales and chords, progression building, and metronome or tuner utilities."
+      description="Scales, chords, and progression building."
       toolkitLinks={<ToolkitNavLinks tabs={tabs.map((t) => ({ id: t.id as MusicToolkitTabId, label: t.label }))} />}
       titleSlot={<FullscreenTitleButton />}
     >
@@ -55,6 +56,8 @@ export default async function Home({ searchParams }: HomePageProps) {
         }))}
         initialTab={initialTab}
       />
+      {/* Progressions — always visible below the tabbed area */}
+      <ProgressionClientWrapper />
     </AppShell>
   );
 }

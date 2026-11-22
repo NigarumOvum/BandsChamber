@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { ListMusic, Timer, type LucideIcon } from "lucide-react";
+import { Timer, type LucideIcon } from "lucide-react";
 import { Tooltip } from "@heroui/react";
 
 import { useI18n } from "@/components/language-provider";
@@ -11,7 +11,6 @@ import type { DictKey } from "@/lib/i18n/dictionaries";
 
 const TAB_ICONS: Record<MusicToolkitTabId, LucideIcon> = {
   harmony: Timer,
-  progressions: ListMusic,
   tuner: Timer, // tuner is now merged into harmony, kept for type completeness
 };
 
@@ -45,8 +44,6 @@ function ToolkitNavLinksInner({ tabs }: ToolkitNavLinksInnerProps) {
               href={`/?tab=${tab.id}`}
               aria-current={isActive ? "page" : undefined}
               className={`glass-pill inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition ${
-                tab.id === "progressions" ? "order-last" : ""
-              } ${
                 isActive
                   ? "glass-pill-active text-[var(--color-foreground)]"
                   : "text-[var(--color-sand-2)] hover:-translate-y-0.5 hover:text-[var(--color-foreground)]"

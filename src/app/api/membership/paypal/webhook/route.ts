@@ -5,7 +5,8 @@ import {
   updatePaymentByOrderId,
   updateSubscription,
 } from "@/lib/membership";
-import { getPaypalWebhookEvent } from "@/lib/membership-paypal";
+import { getPaypalWebhookEvent, verifyPaypalWebhookSignature } from "@/lib/membership-paypal";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 type WebhookResource = {
   id?: string;
@@ -16,12 +17,26 @@ type WebhookResource = {
 
 export async function POST(request: Request) {
   try {
+    // Flood guard: 60 deliveries / min per IP.
+    const limited = enforceRateLimit(request, "membership:webhook", {
+      limit: 60,
+      windowMs: 60_000,
+    });
+    if (limited) return limited;
+
     const body = await parseJsonBody<{ id?: string; event_type?: string; resource?: WebhookResource }>(
       request,
       {},
     );
     if (!body.id || !body.event_type) {
       return errorResponse("Invalid webhook payload", 400);
+    }
+
+    // Signature verification (when PAYPAL_WEBHOOK_ID is configured), on top of
+    // the fetch-back verification below. Fail closed on a bad signature.
+    const signatureVerified = await verifyPaypalWebhookSignature(body, request.headers);
+    if (signatureVerified === false) {
+      return errorResponse("Webhook signature verification failed", 401);
     }
 
     // Verify the event by fetching it back from PayPal over server-to-server auth.

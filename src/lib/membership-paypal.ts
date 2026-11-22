@@ -218,3 +218,60 @@ export async function getPaypalWebhookEvent(eventId: string) {
     method: "GET",
   });
 }
+
+/**
+ * Cryptographic webhook signature verification via PayPal's verify API.
+ * Requires `PAYPAL_WEBHOOK_ID` (the webhook id from the PayPal dashboard).
+ *
+ * Returns:
+ * - `true`  — signature verified
+ * - `false` — signature invalid / required headers missing / cert URL not
+ *   pinned to paypal.com (reject the request)
+ * - `null`  — `PAYPAL_WEBHOOK_ID` not configured; the caller falls back to
+ *   fetch-back verification (`getPaypalWebhookEvent`)
+ */
+export async function verifyPaypalWebhookSignature(
+  webhookEvent: unknown,
+  headers: Headers,
+): Promise<boolean | null> {
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID?.trim();
+  if (!webhookId) {
+    return null;
+  }
+
+  const authAlgo = headers.get("paypal-auth-algo");
+  const certUrl = headers.get("paypal-cert-url");
+  const transmissionId = headers.get("paypal-transmission-id");
+  const transmissionSig = headers.get("paypal-transmission-sig");
+  const transmissionTime = headers.get("paypal-transmission-time");
+
+  if (!authAlgo || !certUrl || !transmissionId || !transmissionSig || !transmissionTime) {
+    return false;
+  }
+
+  // Pin the certificate URL to PayPal hosts before PayPal fetches it.
+  try {
+    const certUrlParsed = new URL(certUrl);
+    const host = certUrlParsed.hostname;
+    if (certUrlParsed.protocol !== "https:" || (host !== "www.paypal.com" && !host.endsWith(".paypal.com"))) {
+      return false;
+    }
+  } catch {
+    return false;
+  }
+
+  const payload = await paypalFetch("/v1/notifications/verify-webhook-signature", {
+    method: "POST",
+    body: JSON.stringify({
+      auth_algo: authAlgo,
+      cert_url: certUrl,
+      transmission_id: transmissionId,
+      transmission_sig: transmissionSig,
+      transmission_time: transmissionTime,
+      webhook_id: webhookId,
+      webhook_event: webhookEvent,
+    }),
+  });
+
+  return payload.verification_status === "SUCCESS";
+}

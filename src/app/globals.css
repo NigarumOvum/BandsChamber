@@ -579,3 +579,128 @@ html[data-theme="dark"] .modal-inset-panel {
   background: var(--color-surface-soft);
 }
 
+/* ── Mobile Responsive Utilities ─────────────────────────────────────────────── */
+
+/* Touch-friendly minimum targets (WCAG 2.5.5) */
+@media (max-width: 640px) {
+  /* Stack flex containers on mobile */
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+
+  /* Full width on mobile */
+  .mobile-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Reduced padding on mobile */
+  .mobile-padding {
+    padding: 0.75rem !important;
+  }
+
+  /* Touch-friendly targets */
+  .mobile-touch {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Hide desktop-only elements */
+  .hide-mobile {
+    display: none !important;
+  }
+
+  /* Scrollable timelines with pull-to-refresh feel */
+  .mobile-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .mobile-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Reduce font sizes on mobile */
+  .mobile-text-sm {
+    font-size: 0.8125rem !important;
+  }
+
+  /* Compact spacing */
+  .mobile-gap-sm {
+    gap: 0.5rem !important;
+  }
+
+  /* Hide decorative elements on mobile */
+  .hide-mobile-decor {
+    display: none !important;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .tablet-grid-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Hide tablet-only elements on mobile/desktop */
+  .tablet-only {
+    display: block !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .tablet-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .tablet-only {
+    display: none !important;
+  }
+}
+
+/* Smooth scroll behavior for all scrollable containers */
+* {
+  scroll-behavior: smooth;
+}
+
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  header {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .glass-pill, .panel, .song-list-item {
+    border-width: 2px !important;
+  }
+}
+

@@ -1,5 +1,6 @@
 import { errorResponse, jsonResponse, parseJsonBody } from "@/lib/api";
 import { confirmEmailChange, requireApiUser } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
@@ -8,6 +9,15 @@ export async function POST(request: Request) {
     if (!body.token) {
       throw new Error("Token is required");
     }
+
+    // Token-guessing guard: 30 attempts / hour per account.
+    const limited = enforceRateLimit(request, "account:email-confirm", {
+      limit: 30,
+      windowMs: 60 * 60_000,
+      identifier: user.id,
+    });
+    if (limited) return limited;
+
     const result = await confirmEmailChange({ userId: user.id, token: body.token });
     return jsonResponse({ ok: true, email: result.email });
   } catch (error) {

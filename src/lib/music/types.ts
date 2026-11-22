@@ -170,3 +170,52 @@ export interface MusicCollaboratorUser {
   name: string | null;
   email: string;
 }
+
+// ── Scale and Chord Types ──────────────────────────────────────────────────
+
+export type ScaleType =
+  | "Major"
+  | "Minor"
+  | "Dorian"
+  | "Phrygian"
+  | "Lydian"
+  | "Mixolydian"
+  | "Aeolian"
+  | "Locrian"
+  | "Pentatonic Major"
+  | "Pentatonic Minor"
+  | "Blues"
+  | "Harmonic Minor"
+  | "Melodic Minor"
+  | "Whole Tone"
+  | "Half Diminished"
+  | "Japanese In"
+  | "Japanese Yo"
+  | "Hungarian Minor"
+  | "Double Harmonic"
+  | "Prometheus"
+  | "Chromatic";
+
+export const SCALE_TYPES: ScaleType[] = [
+  "Major",
+  "Minor",
+  "Dorian",
+  "Phrygian",
+  "Lydian",
+  "Mixolydian",
+  "Aeolian",
+  "Locrian",
+  "Pentatonic Major",
+  "Pentatonic Minor",
+  "Blues",
+  "Harmonic Minor",
+  "Melodic Minor",
+  "Whole Tone",
+  "Half Diminished",
+  "Japanese In",
+  "Japanese Yo",
+  "Hungarian Minor",
+  "Double Harmonic",
+  "Prometheus",
+  "Chromatic",
+];

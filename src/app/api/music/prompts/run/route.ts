@@ -7,10 +7,19 @@ import {
   parsePromptOutput,
 } from "@/lib/music/prompt-runner";
 import { runOllamaJson } from "@/lib/music/ollama";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
     const user = await requireApiUser(request);
+
+    // Ollama runs are expensive: 10 runs / min per account.
+    const limited = enforceRateLimit(request, "music:prompts-run", {
+      limit: 10,
+      windowMs: 60_000,
+      identifier: user.id,
+    });
+    if (limited) return limited;
 
     if (!(await ensureUserCanAccessPage(user, "prompt-library"))) {
       throw new Error("Forbidden");

@@ -78,48 +78,59 @@ export function CollapsibleCard({
             handleToggle();
           }
         }}
-        className={`collapsible-header flex cursor-pointer items-center justify-between gap-3 px-5 py-4 transition-colors ${
+        className={`collapsible-header flex cursor-pointer items-center justify-between gap-2 sm:gap-3 px-3 sm:px-5 py-3 sm:py-4 transition-colors min-h-[44px] ${
           isExpanded ? "border-b border-[var(--color-stroke)]/40" : ""
         } ${headerClassName}`}
       >
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           {icon && (
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-strong)] text-[var(--color-foreground)] shadow-xs">
+            <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg sm:rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-strong)] text-[var(--color-foreground)] shadow-xs">
               {icon}
             </div>
           )}
           <div className="min-w-0">
             {eyebrow && (
-              <div className="eyebrow text-[0.62rem] opacity-75" style={{ color: eyebrowColor || undefined }}>{eyebrow}</div>
+              <div className="eyebrow text-[0.55rem] sm:text-[0.62rem] opacity-75" style={{ color: eyebrowColor || undefined }}>{eyebrow}</div>
             )}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="truncate text-base font-bold tracking-tight text-[var(--color-foreground)]">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="truncate text-sm sm:text-base font-bold tracking-tight text-[var(--color-foreground)]">
                 {title}
               </span>
               {badge && <div className="shrink-0">{badge}</div>}
             </div>
             {subtitle && (
-              <p className="line-clamp-1 text-xs text-[var(--color-sand-2)]">
+              <p className="line-clamp-1 text-[11px] sm:text-xs text-[var(--color-sand-2)]">
                 {subtitle}
               </p>
             )}
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           {headerActions && (
-            <div onClick={handleActionsClick} className="flex items-center gap-1.5">
+            <div onClick={handleActionsClick} className="hidden sm:flex items-center gap-1.5">
+              {headerActions}
+            </div>
+          )}
+          {headerActions && (
+            <div onClick={handleActionsClick} className="flex sm:hidden items-center gap-1">
               {headerActions}
             </div>
           )}
 
-          <motion.div
+          <motion.button
+            type="button"
+            aria-label={isExpanded ? "Collapse section" : "Expand section"}
+            className="flex h-8 w-8 sm:h-7 sm:w-7 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-strong)] text-[var(--color-sand-2)] group-hover:text-[var(--color-foreground)] shadow-xs"
             animate={{ rotate: isExpanded ? 180 : 0 }}
             transition={{ duration: 0.22, ease: "easeInOut" }}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-strong)] text-[var(--color-sand-2)] group-hover:text-[var(--color-foreground)] shadow-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggle();
+            }}
           >
             <ChevronDown className="h-4 w-4" />
-          </motion.div>
+          </motion.button>
         </div>
       </div>
 

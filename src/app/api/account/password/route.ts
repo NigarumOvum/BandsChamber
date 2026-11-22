@@ -1,6 +1,7 @@
 import { errorResponse, jsonResponse, parseJsonBody } from "@/lib/api";
 import { changePassword, requireApiUser } from "@/lib/auth";
 import { SESSION_COOKIE_NAME } from "@/lib/auth-constants";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 function getSessionId(request: Request): string | null {
   const header = request.headers.get("cookie");
@@ -22,6 +23,14 @@ export async function POST(request: Request) {
     if (!body.currentPassword || !body.nextPassword) {
       throw new Error("Current and new passwords are required");
     }
+
+    // Guessing guard: 10 attempts / hour per account.
+    const limited = enforceRateLimit(request, "account:password", {
+      limit: 10,
+      windowMs: 60 * 60_000,
+      identifier: user.id,
+    });
+    if (limited) return limited;
     await changePassword({
       userId: user.id,
       currentPassword: body.currentPassword,

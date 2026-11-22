@@ -6,7 +6,7 @@ import { FileText, FolderKanban, LoaderCircle, Search, X } from "lucide-react";
 import { useI18n } from "@/components/language-provider";
 import { searchWorkspace, type WorkspaceSearchResult } from "@/lib/music/client";
 
-const kindLabelKeys = {
+const kindLabelKeys: Record<WorkspaceSearchResult["kind"], "globalSearch.song" | "globalSearch.project" | "globalSearch.prompt"> = {
   song: "globalSearch.song",
   project: "globalSearch.project",
   prompt: "globalSearch.prompt",

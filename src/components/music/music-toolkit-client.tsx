@@ -12,12 +12,10 @@ import { useI18n } from "@/components/language-provider";
 import { GlassSurface } from "@/components/ui/glass-surface";
 import type { MusicToolkitTabId } from "@/lib/hub-access";
 
-// ── Lazy-load tab panels (no tuner — it lives inside harmony) ──────────────
+// ── Lazy-load tab panels (no tuner — it lives inside harmony; progressions moved to home page) ──
 const tabLoaders = {
   harmony: () =>
     import("@/components/music/theory-lab-client").then((m) => m.TheoryLabClient),
-  progressions: () =>
-    import("@/components/music/progression-client").then((m) => m.ProgressionClient),
 } as const;
 
 type LoadableTabId = keyof typeof tabLoaders;
@@ -25,10 +23,6 @@ type LoadableTabId = keyof typeof tabLoaders;
 const tabPanels: Record<LoadableTabId, ReturnType<typeof dynamic>> = {
   harmony: dynamic(
     () => tabLoaders.harmony().then((Component) => ({ default: Component })),
-    { ssr: false },
-  ),
-  progressions: dynamic(
-    () => tabLoaders.progressions().then((Component) => ({ default: Component })),
     { ssr: false },
   ),
 };

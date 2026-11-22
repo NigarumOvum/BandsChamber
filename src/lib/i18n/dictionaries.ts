@@ -21,7 +21,7 @@ const en = {
   "footer.rights": "All rights reserved.",
   "footer.goPro": "Go Pro",
 
-  "tabs.harmony": "Timing Precision & Harmony",
+  "tabs.harmony": "Harmony",
   "tabs.progressions": "Progressions",
   "tabs.tuner": "Tuner",
   "tabs.lyrics": "Lyrics & Rhymes",
@@ -103,7 +103,7 @@ const es = {
   "footer.rights": "Todos los derechos reservados.",
   "footer.goPro": "Hazte Pro",
 
-  "tabs.harmony": "Precisión rítmica y armonía",
+  "tabs.harmony": "Armonía",
   "tabs.progressions": "Progresiones",
   "tabs.tuner": "Afinador",
   "tabs.lyrics": "Letras y rimas",
@@ -181,7 +181,7 @@ const de = {
   "footer.rights": "Alle Rechte vorbehalten.",
   "footer.goPro": "Pro werden",
 
-  "tabs.harmony": "Timing-Präzision & Harmonie",
+  "tabs.harmony": "Harmonie",
   "tabs.progressions": "Akkordfolgen",
   "tabs.tuner": "Stimmgerät",
   "tabs.lyrics": "Texte & Reime",
@@ -259,7 +259,7 @@ const fr = {
   "footer.rights": "Tous droits réservés.",
   "footer.goPro": "Passer Pro",
 
-  "tabs.harmony": "Précision rythmique & Harmonie",
+  "tabs.harmony": "Harmonie",
   "tabs.progressions": "Progressions",
   "tabs.tuner": "Accordeur",
   "tabs.lyrics": "Paroles & rimes",
@@ -337,7 +337,7 @@ const ru = {
   "footer.rights": "Все права защищены.",
   "footer.goPro": "Стать Pro",
 
-  "tabs.harmony": "Точность ритма и гармония",
+  "tabs.harmony": "Гармония",
   "tabs.progressions": "Прогрессии",
   "tabs.tuner": "Тюнер",
   "tabs.lyrics": "Тексты и рифмы",
