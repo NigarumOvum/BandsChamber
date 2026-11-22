@@ -29,8 +29,14 @@
 - **Audio**: raw Web Audio (synth voices, Karplus-Strong plucks, metronome,
   MIDI scheduler) + optional real-sample engine (`src/lib/music/sample-engine.ts`,
   files under `public/samples/`, CDN via `NEXT_PUBLIC_SAMPLE_BASE_URL`)
-- **AI prompts**: local Ollama (`OLLAMA_BASE_URL`, default `llama3.1:8b`)
+- **AI prompts**: local Ollama (`OLLAMA_BASE_URL`, default `llama3.1:8b`);
+  both env vars are optional and not stored on Vercel (production falls back
+  to the localhost defaults unless a remote server is configured)
 - **Email**: Resend (`src/lib/email.ts`) with fallback-URL surfacing when paused
+- **Observability**: Vercel Web Analytics (`@vercel/analytics` `<Analytics />`
+  in the root layout, project-enabled) and Vercel Tracing (`@vercel/otel` in
+  `src/instrumentation.ts`, service `bandschamber-studio`, production sampled
+  at 10 %). Tracing needs no env vars or secrets.
 - **PWA**: `@ducanh2912/next-pwa` (disabled in dev), manifest shortcuts,
   offline pill, install prompt
 - **Tests**: Vitest, pure music-theory/sample libs only (`*.test.ts`)
@@ -103,6 +109,13 @@ Pro $9.99 mo / Lifetime $149), `membership_subscriptions`
   chevron button with ARIA labels. All interactive controls maintain WCAG
   2.5.5 touch target minimums. Global CSS includes safe area insets for
   notched devices, reduced motion support, and high contrast mode support.
+- **Motion & page transitions** (2026-11-22): `PageTransition`
+  (`src/components/page-transition.tsx`) wraps AppShell content and replays a
+  CSS `page-enter` fade/lift only when `usePathname()` changes — query-string
+  navigations (studio tabs, filters) keep state and do not re-animate. Auth
+  screens use the same `page-transition` class. The animation has no fill
+  mode so its temporary transform cannot trap `position: fixed` descendants;
+  `prefers-reduced-motion` disables it.
 - Server: `requireCurrentUser()` → `/login`; `AppShell({pageKey})` → denied
   redirect; API: `requireApiUser` (401) / `requireAdminApiUser` (403).
 - Known scoping quirk (see REQUIREMENTS NFR/security notes): any song with a
@@ -162,6 +175,10 @@ Pro $9.99 mo / Lifetime $149), `membership_subscriptions`
 - `src/app/` — pages + `api/` route handlers (account, music, membership);
   `src/app/api/auth/[...all]/route.ts` delegates the whole auth surface
   (sign-up/in/out, verify, reset) to Better Auth via `toNextJsHandler`
+- `src/instrumentation.ts` — `registerOTel({ serviceName })` so Vercel
+  Tracing captures Next.js framework spans alongside infrastructure spans
+- `src/components/page-transition.tsx` — pathname-keyed route enter animation
+  used by AppShell; `.page-transition` CSS lives in `src/app/globals.css`
 - `src/proxy.ts` — cookie-presence gate only (no DB, no auth-page redirects)
 - `src/components/music/` — feature clients (toolkit, studio, daw, tabs…)
 - `src/components/{auth,account,membership,pwa,ui}/` — cross-cutting UI

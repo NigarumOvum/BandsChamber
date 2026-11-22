@@ -90,6 +90,12 @@
   refraction layer over the existing glass CSS; on Safari/Firefox surfaces
   still frost/tint/edge-light (no live-DOM bend); the injected layers cause no
   layout shift and focus order stays intact. (FR-043, NFR-008)
+- **Motion & observability** (2026-11-22): navigating between routes fades/
+  lifts the page content once per path change (studio tab query changes do
+  not replay it); reduced-motion users see instant swaps; Vercel Web
+  Analytics is enabled and `<Analytics />` mounts; production requests appear
+  in Vercel Traces at 10 % sampling with `bandschamber-studio` spans.
+  (FR-091, NFR-009)
 
 ## MVP definition (agreed)
 

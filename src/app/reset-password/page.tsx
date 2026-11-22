@@ -18,7 +18,7 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
   const { token } = await searchParams;
   if (!token) {
     return (
-      <div className="grain min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+      <div className="grain page-transition min-h-screen px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-3xl items-center justify-center">
           <GlassSurface className="panel w-full space-y-4 rounded-[2.25rem] p-8 text-[var(--color-sand-2)] lg:p-10">
               <div className="eyebrow">Account recovery</div>

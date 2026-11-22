@@ -44,7 +44,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   }
 
   return (
-    <div className="grain min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+    <div className="grain page-transition min-h-screen px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-3xl items-center justify-center">
         <Card className="w-full rounded-[2.25rem]">
           <GlassSurface className="panel rounded-[2.25rem]">

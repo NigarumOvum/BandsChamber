@@ -291,6 +291,13 @@
   `npm run migrate:better-auth`; page access, membership, and song ownership
   keep the same user ids, and admin bootstrap emails still map to `isAdmin`.
 
+### Motion & observability (2026-11-22)
+- FR-091 Page transitions: navigating between paths (toolkit, studio, prompt
+  library, membership, account, auth) replays a short fade/lift on the page
+  content; query-string-only navigations (studio tabs, filters) keep their
+  state and do not replay it, and `prefers-reduced-motion: reduce` disables
+  the animation.
+
 ## Non-functional requirements
 
 - NFR-001 **Performance**: lazy tab loads (`dynamic(ssr:false)`); PWA
@@ -322,3 +329,9 @@
   pinned out of flow (`[data-lg-layer]`) so they cause no layout shift; wrapping
   is applied to containers, not to native controls, to protect focus order and
   keyboard semantics.
+- NFR-009 **Observability**: Vercel Web Analytics is enabled for the project
+  and `<Analytics />` mounts site-wide; Vercel Tracing is enabled for
+  production at 10 % sampling with `@vercel/otel` (`src/instrumentation.ts`,
+  service `bandschamber-studio`) so framework spans appear next to
+  infrastructure spans. Both are cookieless and need no secrets; `OLLAMA_*`
+  env vars are optional and not required in Vercel.

@@ -10,6 +10,7 @@ import { AppFooter } from "@/components/app-footer";
 import { GlobalSearchDialog } from "@/components/global-search-dialog";
 import { HeaderAccountLink } from "@/components/header-bits";
 import { LanguageSwitcher } from "@/components/language-provider";
+import { PageTransition } from "@/components/page-transition";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PWAInstallButton } from "@/components/pwa/pwa-install-button";
 import { GlassSurface } from "@/components/ui/glass-surface";
@@ -142,7 +143,7 @@ export async function AppShell({
 
       {/* ── Page content ──────────────────────────────────────── */}
       <div className="flex flex-1 flex-col px-3 py-4 sm:px-5 lg:px-6">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
+        <PageTransition className="mx-auto flex w-full max-w-7xl flex-col gap-4">
 
           <main id="main-content" tabIndex={-1} className={aside ? "page-grid" : "space-y-4"}>
             {aside ? (
@@ -176,7 +177,7 @@ export async function AppShell({
           </main>
 
           <AppFooter />
-        </div>
+        </PageTransition>
       </div>
     </div>
   );
