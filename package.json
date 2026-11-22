@@ -15,6 +15,7 @@
     "migrate:better-auth": "node scripts/migrate-auth-to-better-auth.mjs"
   },
   "dependencies": {
+    "@better-auth/infra": "^0.4.31",
     "@ducanh2912/next-pwa": "^10.2.9",
     "@heroui/react": "^2.8.8",
     "@libsql/client": "^0.15.15",

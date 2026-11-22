@@ -1,5 +1,6 @@
 import { createClient } from "@libsql/client";
 import { LibsqlDialect, type LibsqlDialectConfig } from "@libsql/kysely-libsql";
+import { dash } from "@better-auth/infra";
 import { APIError, betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { headers } from "next/headers";
@@ -294,7 +295,14 @@ function createAuthInstance(client: ReturnType<typeof createClient>) {
       enabled: false,
     },
     trustedOrigins: [getBaseUrl()],
-    plugins: [nextCookies()],
+    plugins: [
+      // Optional hosted dashboard (https://dash.better-auth.com). It stays off
+      // until an Infrastructure project API key is configured.
+      ...(process.env.BETTER_AUTH_API_KEY?.trim()
+        ? [dash({ apiKey: process.env.BETTER_AUTH_API_KEY.trim() })]
+        : []),
+      nextCookies(),
+    ],
   });
 }
 

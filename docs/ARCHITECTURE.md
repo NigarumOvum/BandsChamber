@@ -11,6 +11,10 @@
   verify/reset tokens enforced by the `app_email_token` ledger. Signing secret
   from `BETTER_AUTH_SECRET` (falls back to `AUTH_SECRET`, then a dev default);
   base URL from `APP_BASE_URL`/`NEXT_PUBLIC_APP_URL` or `BETTER_AUTH_URL`.
+  Optional **Better Auth Infrastructure dashboard**: `dash()`
+  (`@better-auth/infra` 0.4.x) is enabled only when `BETTER_AUTH_API_KEY` is
+  set; it mounts admin endpoints under `/api/auth/dash/*`, each gated by a
+  dashboard-signed JWT whose API-key hash must match.
 - **Auth + app data**: single shared **Turso/libSQL** database
   (`MUSIC_TURSO_DATABASE_URL` / `MUSIC_TURSO_AUTH_TOKEN`);
   `next.config.ts` lists `@libsql/client`, `@libsql/kysely-libsql`, `kysely`,
@@ -137,6 +141,11 @@ Pro $9.99 mo / Lifetime $149), `membership_subscriptions`
   the Interactive Fretboard adds hover-play auditioning, root vs. in-scale vs.
   pressed emphasis, fret inlays, a last-played note/Hz readout, and
   horizontal scrolling on narrow screens.
+- **Auth dashboard** (optional): create a project at
+  `https://dash.better-auth.com`, copy its API key into
+  `BETTER_AUTH_API_KEY`, and redeploy. The hosted dashboard reads users,
+  sessions, analytics, and audit logs through the `dash()` endpoints; without
+  a key the plugin is not registered and nothing changes.
 - **Prompts**: template (song-field or part-scoped) → run on song via Ollama →
   preview → optional apply to the song field.
 - **Membership**: free select (instant) → one-time order/capture → subscription
